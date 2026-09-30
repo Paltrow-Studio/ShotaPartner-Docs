@@ -21,6 +21,8 @@ export const recipeRows: Row[] = [
   ['伙伴复活器', '8 圆石 + 1 羁绊之尘瓶', '配合信物使用，20 秒完成复活'],
 ]
 
+export const recipeNote =
+  '羁绊之尘瓶的来源有两处：伙伴执行「生产羁绊之尘」工作（每 5 秒 1 瓶，需空玻璃瓶）、抚摸时 40% 概率返还（同样需要空玻璃瓶）。'
 
 export const itemRows: Row[] = [
   ['伙伴物语指南', '右键打开 Patchouli 手册；未安装 Patchouli 时仅显示提示'],

@@ -398,9 +398,6 @@ export const chapters: Chapter[] = [
           ['三个管理器', '伙伴护甲 / 背包 / 快捷栏管理器：右键伙伴打开对应视图，Shift+右键打开选择界面'],
         ],
       },
-      {
-        kind: 'note',
-      },
     ],
   },
   {
