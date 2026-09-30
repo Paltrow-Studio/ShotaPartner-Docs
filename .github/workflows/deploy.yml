@@ -46,7 +46,8 @@ jobs:
       - name: 安装依赖（npm ci）
         run: npm ci
 
-      # 执行项目构建脚本（tsc --noEmit && vite build），产物输出到 dist/
+      # 执行项目构建脚本（tsc --noEmit && vite build && 内容门禁），产物输出到 dist/
+      # 内容门禁见 scripts/check-content.mjs 与 README「内容门禁」一节
       - name: 构建站点（npm run build）
         run: npm run build
 
