@@ -33,7 +33,7 @@ export function Features() {
                     </span>
                     <div>
                       <h3 className="text-base font-semibold text-white sm:text-lg">{category.title}</h3>
-                      <p className="mt-0.5 text-xs text-slate-500">{category.desc}</p>
+                      <p className="mt-0.5 text-xs text-slate-400">{category.desc}</p>
                     </div>
                   </div>
                   <span className={`pill chip-mono shrink-0 ${mod.accent.text} ${mod.accent.border}`}>

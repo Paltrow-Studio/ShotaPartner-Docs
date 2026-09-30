@@ -71,7 +71,7 @@ export function Hero() {
               <ul className="flex flex-wrap gap-2 pt-1">
                 {envBadges.map((badge) => (
                   <li key={badge.label} className="pill" title={badge.hint}>
-                    <span className="text-slate-500">{badge.label}</span>
+                    <span className="text-slate-400">{badge.label}</span>
                     <span className="font-medium text-slate-200">{badge.value}</span>
                   </li>
                 ))}
@@ -83,7 +83,7 @@ export function Hero() {
           <Reveal delay={160} className="lg:pl-4">
             <div className="card relative overflow-hidden p-5 sm:p-6">
               <div className="flex items-center justify-between">
-                <span className="chip-mono uppercase tracking-[0.18em] text-slate-500">Module Map</span>
+                <span className="chip-mono uppercase tracking-[0.18em] text-slate-400">Module Map</span>
                 <span className="pill border-white/8 text-[0.7rem] text-slate-400">1 前置 + 2 内容包</span>
               </div>
 
@@ -113,7 +113,7 @@ export function Hero() {
                     {index < modules.length - 1 ? (
                       <div className="flex items-center gap-2 py-1.5 pl-7">
                         <span className="h-3 w-px bg-white/15" />
-                        <span className="chip-mono text-[0.68rem] text-slate-500">
+                        <span className="chip-mono text-[0.68rem] text-slate-400">
                           {index === 0 ? 'Core 依赖 API' : 'Extra-School 只依赖 API'}
                         </span>
                       </div>
@@ -122,7 +122,7 @@ export function Hero() {
                 ))}
               </div>
 
-              <p className="mt-5 border-t border-white/8 pt-4 text-xs leading-relaxed text-slate-500">
+              <p className="mt-5 border-t border-white/8 pt-4 text-xs leading-relaxed text-slate-400">
                 依赖箭头从内容模块指向公共契约层。学校追加包可以脱离游戏本体单独安装 —— 这是本次拆分的主要目标。
               </p>
             </div>

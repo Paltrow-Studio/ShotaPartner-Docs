@@ -53,7 +53,7 @@ export function Install() {
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/6 text-violet-300">
                 <Icon name={req.icon} className="h-4.5 w-4.5" />
               </span>
-              <p className="mt-4 chip-mono uppercase tracking-[0.16em] text-slate-500">{req.label}</p>
+              <p className="mt-4 chip-mono uppercase tracking-[0.16em] text-slate-400">{req.label}</p>
               <p className="mt-1 text-lg font-semibold text-white">{req.value}</p>
               <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{req.note}</p>
             </div>
@@ -97,7 +97,7 @@ export function Install() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className={`h-1.5 w-1.5 rounded-full ${mod.accent.dot}`} />
                       <span className="chip-mono text-xs text-slate-200">{mod.modId}</span>
-                      <span className="chip-mono text-[0.68rem] text-slate-500">v{mod.version}</span>
+                      <span className="chip-mono text-[0.68rem] text-slate-400">v{mod.version}</span>
                     </div>
                     <ul className="mt-2.5 space-y-1.5">
                       {mod.requires.map((dep) => (

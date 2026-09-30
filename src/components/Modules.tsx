@@ -85,7 +85,7 @@ function ModuleCard({ mod, index }: { mod: ModuleInfo; index: number }) {
           {/* 依赖 */}
           <div className="mt-7 grid gap-4 border-t border-white/8 pt-6 sm:grid-cols-2">
             <div>
-              <p className="chip-mono uppercase tracking-[0.16em] text-slate-500">必需前置</p>
+              <p className="chip-mono uppercase tracking-[0.16em] text-slate-400">必需前置</p>
               <ul className="mt-3 flex flex-wrap gap-2">
                 {mod.requires.map((dep) => (
                   <li key={dep} className="pill border-emerald-400/20 bg-emerald-500/8 text-emerald-200">
@@ -96,7 +96,7 @@ function ModuleCard({ mod, index }: { mod: ModuleInfo; index: number }) {
               </ul>
             </div>
             <div>
-              <p className="chip-mono uppercase tracking-[0.16em] text-slate-500">
+              <p className="chip-mono uppercase tracking-[0.16em] text-slate-400">
                 可选联动 {mod.optional.length > 0 ? `(${mod.optional.length})` : ''}
               </p>
               {mod.optional.length > 0 ? (
@@ -108,7 +108,7 @@ function ModuleCard({ mod, index }: { mod: ModuleInfo; index: number }) {
                   ))}
                 </ul>
               ) : (
-                <p className="mt-3 text-sm text-slate-500">
+                <p className="mt-3 text-sm text-slate-400">
                   不依赖任何第三方模组 —— 这是刻意保持的约束，避免下游拿到未 deobf 的坐标。
                 </p>
               )}
@@ -126,7 +126,7 @@ function ModuleCard({ mod, index }: { mod: ModuleInfo; index: number }) {
               <Icon name="bug" className="h-3.5 w-3.5" />
               报告此模块的问题
             </a>
-            <span className="chip-mono text-[0.68rem] text-slate-500">
+            <span className="chip-mono text-[0.68rem] text-slate-400">
               提交时会把「{mod.shortName}」预填进标题与标签
             </span>
           </div>

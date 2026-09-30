@@ -71,7 +71,7 @@ export function Feedback() {
               </span>
               <h3 className="text-sm font-semibold text-white">你想反馈什么？</h3>
             </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="mt-4 grid auto-rows-fr gap-3 sm:grid-cols-2">
               {issueTypes.map((item) => {
                 const selected = item.id === typeId
                 return (
@@ -145,15 +145,15 @@ export function Feedback() {
             <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4">
               <dl className="space-y-2.5 text-xs">
                 <div className="flex flex-wrap items-center gap-2">
-                  <dt className="chip-mono w-20 shrink-0 text-slate-500">表单模板</dt>
+                  <dt className="chip-mono w-20 shrink-0 text-slate-400">表单模板</dt>
                   <dd className="chip-mono text-slate-200">{type.template}</dd>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <dt className="chip-mono w-20 shrink-0 text-slate-500">预填标题</dt>
+                  <dt className="chip-mono w-20 shrink-0 text-slate-400">预填标题</dt>
                   <dd className="chip-mono text-slate-200">{previewTitle}</dd>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <dt className="chip-mono w-20 shrink-0 text-slate-500">自动标签</dt>
+                  <dt className="chip-mono w-20 shrink-0 text-slate-400">自动标签</dt>
                   <dd className="flex flex-wrap gap-1.5">
                     {type.labels.split(',').map((label) => (
                       <span
@@ -166,7 +166,7 @@ export function Feedback() {
                   </dd>
                 </div>
               </dl>
-              <p className="mt-3 border-t border-white/8 pt-3 text-[0.72rem] leading-relaxed text-slate-500">
+              <p className="mt-3 border-t border-white/8 pt-3 text-[0.72rem] leading-relaxed text-slate-400">
                 打开表单后请把「涉及模块」选为「{option.formOption}」。表单的必填项会提示你补齐版本、日志与复现步骤。
               </p>
             </div>
@@ -201,7 +201,7 @@ export function Feedback() {
               </a>
             </div>
 
-            <p className="mt-4 text-[0.72rem] leading-relaxed text-slate-500">
+            <p className="mt-4 text-[0.72rem] leading-relaxed text-slate-400">
               提交需要 GitHub 账号；issue 是公开的，所有人都能查看与跟进。若你不方便注册账号，也可以在官方发布帖或玩家群里反馈。
             </p>
           </div>
@@ -258,13 +258,13 @@ export function Feedback() {
                       href={buildIssueUrl(item, moduleId)}
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="link-underline flex items-center justify-between gap-3 text-xs text-slate-300 hover:text-white"
+                      className="link-underline flex items-center justify-between gap-3 py-1 text-xs text-slate-300 hover:text-white"
                     >
                       <span className="flex items-center gap-2">
                         <Icon name={item.icon} className={`h-3.5 w-3.5 ${item.accent.text}`} />
                         {item.name}
                       </span>
-                      <Icon name="external" className="h-3.5 w-3.5 text-slate-500" />
+                      <Icon name="external" className="h-3.5 w-3.5 text-slate-400" />
                     </a>
                   </li>
                 ))}
@@ -273,13 +273,13 @@ export function Feedback() {
                     href={ISSUES}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="link-underline flex items-center justify-between gap-3 text-xs text-slate-300 hover:text-white"
+                    className="link-underline flex items-center justify-between gap-3 py-1 text-xs text-slate-300 hover:text-white"
                   >
                     <span className="flex items-center gap-2">
                       <Icon name="list" className="h-3.5 w-3.5 text-slate-400" />
                       浏览全部 issue
                     </span>
-                    <Icon name="external" className="h-3.5 w-3.5 text-slate-500" />
+                    <Icon name="external" className="h-3.5 w-3.5 text-slate-400" />
                   </a>
                 </li>
                 <li>
@@ -287,13 +287,13 @@ export function Feedback() {
                     href={DISCUSSIONS}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="link-underline flex items-center justify-between gap-3 text-xs text-slate-300 hover:text-white"
+                    className="link-underline flex items-center justify-between gap-3 py-1 text-xs text-slate-300 hover:text-white"
                   >
                     <span className="flex items-center gap-2">
                       <Icon name="users" className="h-3.5 w-3.5 text-slate-400" />
                       讨论区（提问 / 交流）
                     </span>
-                    <Icon name="external" className="h-3.5 w-3.5 text-slate-500" />
+                    <Icon name="external" className="h-3.5 w-3.5 text-slate-400" />
                   </a>
                 </li>
                 <li>
@@ -301,13 +301,13 @@ export function Feedback() {
                     href={GITHUB_REPO}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="link-underline flex items-center justify-between gap-3 text-xs text-slate-300 hover:text-white"
+                    className="link-underline flex items-center justify-between gap-3 py-1 text-xs text-slate-300 hover:text-white"
                   >
                     <span className="flex items-center gap-2">
                       <Icon name="github" className="h-3.5 w-3.5 text-slate-400" />
                       本仓库首页
                     </span>
-                    <Icon name="external" className="h-3.5 w-3.5 text-slate-500" />
+                    <Icon name="external" className="h-3.5 w-3.5 text-slate-400" />
                   </a>
                 </li>
               </ul>

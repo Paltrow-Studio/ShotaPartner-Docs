@@ -67,7 +67,7 @@ export function Nav() {
             <LogoMark className="h-9 w-9 transition-transform duration-300 group-hover:scale-105" />
             <span className="flex flex-col leading-tight">
               <span className="text-sm font-semibold text-white">伙伴物语</span>
-              <span className="chip-mono text-[0.68rem] uppercase tracking-[0.16em] text-slate-500">
+              <span className="chip-mono text-[0.68rem] uppercase tracking-[0.16em] text-slate-400">
                 Partner Monogatari
               </span>
             </span>

@@ -12,12 +12,12 @@ export function Footer() {
               <LogoMark className="h-10 w-10" />
               <div>
                 <p className="text-sm font-semibold text-white">伙伴物语</p>
-                <p className="chip-mono text-[0.68rem] uppercase tracking-[0.16em] text-slate-500">
+                <p className="chip-mono text-[0.68rem] uppercase tracking-[0.16em] text-slate-400">
                   Partner Monogatari
                 </p>
               </div>
             </div>
-            <p className="mt-4 max-w-sm text-xs leading-relaxed text-slate-500">{footerNote.text}</p>
+            <p className="mt-4 max-w-sm text-xs leading-relaxed text-slate-400">{footerNote.text}</p>
             <div className="mt-5 flex flex-wrap gap-2">
               <span className="pill chip-mono text-[0.68rem]">Minecraft 1.20.1</span>
               <span className="pill chip-mono text-[0.68rem]">Forge 47.4.23</span>
@@ -26,11 +26,11 @@ export function Footer() {
           </div>
 
           <nav aria-label="页面导航">
-            <p className="chip-mono uppercase tracking-[0.16em] text-slate-500">本页</p>
+            <p className="chip-mono uppercase tracking-[0.16em] text-slate-400">本页</p>
             <ul className="mt-4 space-y-2.5">
               {navItems.map((item) => (
                 <li key={item.id}>
-                  <a href={`#${item.id}`} className="text-xs text-slate-400 transition-colors hover:text-white">
+                  <a href={`#${item.id}`} className="inline-block py-1 text-xs text-slate-400 transition-colors hover:text-white">
                     {item.label}
                   </a>
                 </li>
@@ -39,13 +39,13 @@ export function Footer() {
           </nav>
 
           <div>
-            <p className="chip-mono uppercase tracking-[0.16em] text-slate-500">三个模块</p>
+            <p className="chip-mono uppercase tracking-[0.16em] text-slate-400">三个模块</p>
             <ul className="mt-4 space-y-2.5">
               {modules.map((mod) => (
                 <li key={mod.id}>
                   <a
                     href={`#module-${mod.id}`}
-                    className="flex items-center gap-2 text-xs text-slate-400 transition-colors hover:text-white"
+                    className="flex items-center gap-2 py-1 text-xs text-slate-400 transition-colors hover:text-white"
                   >
                     <span className={`h-1.5 w-1.5 rounded-full ${mod.accent.dot}`} />
                     <span className="chip-mono">{mod.modId}</span>
@@ -56,14 +56,14 @@ export function Footer() {
           </div>
 
           <div>
-            <p className="chip-mono uppercase tracking-[0.16em] text-slate-500">反馈与联系</p>
+            <p className="chip-mono uppercase tracking-[0.16em] text-slate-400">反馈与联系</p>
             <ul className="mt-4 space-y-2.5">
               <li>
                 <a
                   href={GITHUB_REPO}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="flex items-center gap-2 text-xs text-slate-400 transition-colors hover:text-white"
+                  className="flex items-center gap-2 py-1 text-xs text-slate-400 transition-colors hover:text-white"
                 >
                   <Icon name="github" className="h-3.5 w-3.5" />
                   本仓库（Docs）
@@ -74,7 +74,7 @@ export function Footer() {
                   href={ISSUES}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="flex items-center gap-2 text-xs text-slate-400 transition-colors hover:text-white"
+                  className="flex items-center gap-2 py-1 text-xs text-slate-400 transition-colors hover:text-white"
                 >
                   <Icon name="bug" className="h-3.5 w-3.5" />
                   问题反馈（Issues）
@@ -85,7 +85,7 @@ export function Footer() {
                   href={DISCUSSIONS}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="flex items-center gap-2 text-xs text-slate-400 transition-colors hover:text-white"
+                  className="flex items-center gap-2 py-1 text-xs text-slate-400 transition-colors hover:text-white"
                 >
                   <Icon name="users" className="h-3.5 w-3.5" />
                   讨论区（Discussions）
@@ -96,7 +96,7 @@ export function Footer() {
                   href={ORG_URL}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="flex items-center gap-2 text-xs text-slate-400 transition-colors hover:text-white"
+                  className="flex items-center gap-2 py-1 text-xs text-slate-400 transition-colors hover:text-white"
                 >
                   <Icon name="external" className="h-3.5 w-3.5" />
                   Paltrow Studio
@@ -108,7 +108,7 @@ export function Footer() {
 
         <div className="hairline my-10" />
 
-        <div className="flex flex-col gap-3 text-[0.7rem] leading-relaxed text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 text-[0.7rem] leading-relaxed text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>
             © {new Date().getFullYear()} Paltrow Studio · {footerNote.license}
           </p>
