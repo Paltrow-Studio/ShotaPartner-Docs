@@ -1,10 +1,14 @@
 import type { Chapter } from './types'
+import { moduleSummaries } from './modules'
 
 /**
  * 玩法章节。事实来源：ShotaPartner-Core / -API / -Extra-School 的源码与 docs（以代码为准）。
  * 行文为说明文体：平实陈述、给出数值与条件，不用口语与宣传性措辞。
  * 渲染逻辑在 components/Guide.tsx；改文案只动这个文件。
  */
+
+/** 本页对应的本体版本；取自 modules.ts 的模块清单，避免两处版本号走散。 */
+const coreVersion = moduleSummaries.find((mod) => mod.id === 'core')?.version ?? '当前版本'
 
 export const chapters: Chapter[] = [
   {
@@ -456,7 +460,7 @@ export const chapters: Chapter[] = [
       {
         kind: 'p',
         text:
-          '学校是一个独立维度。地形本体为一整片空气，全部建筑来自 13 个 `.mca` 文件（9 个地形区文件，另有各 2 个兴趣点文件与实体文件），其中 9 个区域文件按 32×32 区块展开，共 9216 个区块。该维度有天空与日照、无天花板，坐标与主世界 1:1 对应。',
+          '学校是一个独立维度。该维度有天空与日照、无天花板，坐标与主世界 1:1 对应。',
       },
       { kind: 'sub', text: '传送门' },
       {
@@ -547,8 +551,8 @@ export const chapters: Chapter[] = [
       },
       {
         kind: 'note',
-        title: '手册文案与当前版本存在差异，以本页为准。',
-        text: '游戏内手册停留在早期设计稿，其中若干条目描述的系统从未实现。本页按代码的实际行为整理，逐项差异见下表。',
+        title: `手册文案与本体 ${coreVersion} 存在差异，以本页为准。`,
+        text: `游戏内手册停留在早期设计稿，其中若干条目描述的系统从未实现。本页按本体 ${coreVersion} 的实际行为整理，逐项差异见下表。`,
       },
       {
         kind: 'table',
