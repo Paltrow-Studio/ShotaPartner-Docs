@@ -8,3 +8,7 @@ dist-ssr
 .idea
 *.log
 npm-debug.log*
+
+# ── Python 缓存（scripts/ 下的脚本运行产生，禁止入库） ──
+__pycache__/
+*.py[cod]
