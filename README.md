@@ -55,13 +55,17 @@ push → main ─→ npm ci ─→ npm run build ─→ 校验 dist/index.html �
 src/
 ├─ App.tsx                 # 页面装配 + FAQ 结构化数据 + 回到顶部
 ├─ index.css              # 两套主题的语义色板、纸面质感、组件类、无障碍与动效偏好
-├─ lib/theme.ts           # 日间/夜间主题状态（首屏防闪由 index.html 内联脚本完成）
+├─ lib/                  # 站点运行时逻辑
+│  ├─ theme.ts           # 日间/夜间主题状态（首屏防闪由 index.html 内联脚本完成）
+│  ├─ reach.ts           # github.com 连通性探测
+│  ├─ accelerator.ts     # 加速节点实测与自动选用
+│  └─ relay.ts           # 反馈中继客户端（未配置地址时不发请求）
 ├─ components/
 │  ├─ Nav / Hero / Contents / Roster / Reference / Install / Faq / Feedback / Footer
 │  ├─ Guide.tsx           # 玩法章节渲染器（按 data/guide.ts 的块类型渲染）
 │  └─ paper.tsx           # 纸面基础件：行内标记解析、Sheet、章节标题、批注
 └─ data/                  # ★ 所有文案与内容都在这里，改内容基本只动这层
-   ├─ site.ts             # 站点常量与导航
+   ├─ site.ts             # 站点常量与导航（含加速节点、中继地址）
    ├─ guide.ts            # 玩法章节（11 章，正文主体）
    ├─ roster.ts           # 27 位伙伴的名册与六项初始训练值
    ├─ reference.ts        # 按键、命令、物品、方块、状态效果
@@ -69,6 +73,12 @@ src/
    ├─ faq.ts              # 常见问题
    ├─ feedback.ts         # 反馈类型、模块选项、issue 表单深链
    └─ types.ts            # 章节数据结构
+
+relay/
+├─ server.mjs             # 反馈中继（Node 18+，零依赖）
+├─ worker.js              # 同一接口的 Cloudflare Worker 版
+├─ selftest.mjs           # 中继自测（11 项，不需要令牌）
+└─ README.md              # 部署、令牌权限、安全与自测说明
 ```
 
 ### 内容维护指引
@@ -82,6 +92,8 @@ src/
 | 导航、首屏文案 | `src/data/site.ts` |
 | 常见问题 | `src/data/faq.ts` |
 | 反馈类型 / 模块选项 / 预填逻辑 | `src/data/feedback.ts` |
+| 加速节点名单、中继地址 | `src/data/site.ts`（`GITHUB_MIRRORS` / `FEEDBACK_RELAY_URL`） |
+| 反馈中继服务 | `relay/`（部署与安全说明见 `relay/README.md`） |
 | 配色、纸面质感、字体 | `src/index.css`（`:root` 与 `[data-theme='dark']` 两套变量） |
 | 站点图标 / 分享图 | `scripts/make-icons.py` 重新生成，见下节 |
 
@@ -140,7 +152,18 @@ GitHub 在国内经常无法直接访问，这一点没有办法靠前端绕过�
 | bgithub.xyz / kkgithub.com / hub.whtrys.space / github.moeyy.xyz | 403 或不可达 | — | — |
 
 因此**没有任何国内节点可以承载 issue 表单与登录流程**：它们只转发文件路径，HTML 页面一律 403/404，而 `issues/new` 本身需要 GitHub 会话。`ghproxy.net` 已跳转垃圾站点，已从 `GITHUB_MIRRORS` 中移除。
-若确实需要在国内直接收集反馈，两条可行路线：自建中转（Cloudflare Worker 或国内云函数 + GitHub Token 代发 issue，代价是维护服务并保管写权限 token），或在 Gitee 建一个反馈仓并把地址填进 `FALLBACK_FEEDBACK_URL`（零后端，国内可直达，但反馈落在 Gitee 而非 GitHub issue）。
+
+### 反馈中继（可选，唯一能在国内直接建 issue 的路径）
+
+`relay/` 下是一份最小后端（Node 零依赖版 `server.mjs` + Cloudflare Worker 版 `worker.js`，接口一致）：玩家只把草稿 POST 给它，由它用**服务端保管的细粒度令牌**调用 `api.github.com` 建 issue，令牌不下发到浏览器。部署与安全说明见 [relay/README.md](relay/README.md)，自测（不访问 GitHub、不需要令牌）见 [relay/selftest.mjs](relay/selftest.mjs)：
+
+```bash
+node relay/selftest.mjs   # 11 项：校验、标签映射、蜜罐、来源白名单、限流
+```
+
+启用方式：部署后把地址填进 `FEEDBACK_RELAY_URL`（或构建期 `VITE_RELAY_URL`），反馈区会出现「经中继直接提交」；**留空则完全不显示该区块**，页面回到纯静态的复制 / 下载草稿模式，不产生任何中继请求。
+
+另一条零后端路线：在 Gitee 建一个反馈仓并把地址填进 `FALLBACK_FEEDBACK_URL`（国内可直达，但反馈落在 Gitee 而非 GitHub issue）。
 
 ### 相关配置（`src/data/site.ts`）
 
@@ -149,6 +172,7 @@ GitHub 在国内经常无法直接访问，这一点没有办法靠前端绕过�
 | `GITHUB_MIRRORS` | 参与自动测试的加速节点（`id` / `label` / `prefix`），可自行增删 |
 | `MIRROR_PROBE_RAW` | 测速与校验用的公开文件，换仓库时同步修改 |
 | `REPO_ARCHIVE` / `REPO_README_RAW` | 会被套上选定节点的资源链接 |
+| `FEEDBACK_RELAY_URL` | 反馈中继地址；**留空则不显示「直接提交」按钮，且不发出任何中继请求** |
 | `FALLBACK_FEEDBACK_URL` / `FALLBACK_FEEDBACK_LABEL` | 国内备用反馈渠道（问卷、表单、Gitee 仓等）；**留空则不显示该入口** |
 | `SITE_MIRROR_URL` | 本站的国内镜像地址（例如另建的 Gitee Pages / Cloudflare Pages）；留空则不显示 |
 

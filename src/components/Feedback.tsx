@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   buildIssueUrl,
+  buildReportDraft,
   buildReportText,
   issueTypes,
   moduleOptions,
@@ -12,6 +13,7 @@ import {
   DISCUSSIONS,
   FALLBACK_FEEDBACK_LABEL,
   FALLBACK_FEEDBACK_URL,
+  FEEDBACK_RELAY_URL,
   GITHUB_REPO,
   ISSUES,
   REPO_ARCHIVE,
@@ -19,6 +21,7 @@ import {
   SITE_MIRROR_URL,
 } from '../data/site'
 import { accelerated, useAccelerator } from '../lib/accelerator'
+import { useRelay } from '../lib/relay'
 import { useGithubReach } from '../lib/reach'
 import type { ModuleId } from '../data/modules'
 import { Sheet } from './paper'
@@ -43,10 +46,24 @@ export function Feedback() {
   const [copied, setCopied] = useState(false)
   const [copyState, setCopyState] = useState<'idle' | 'ok' | 'manual'>('idle')
   const [downloaded, setDownloaded] = useState(false)
+  const [summary, setSummary] = useState('')
+  const [contact, setContact] = useState('')
+  const [honeypot, setHoneypot] = useState('')
+  const [submitState, setSubmitState] = useState<'idle' | 'ok' | 'error'>('idle')
+  const [submitMessage, setSubmitMessage] = useState('')
+  const [issueUrl, setIssueUrl] = useState('')
   const sectionRef = useRef<HTMLElement | null>(null)
   const manualRef = useRef<HTMLTextAreaElement | null>(null)
   const { state: reach, check: checkReach } = useGithubReach()
   const { rows: nodes, phase: nodePhase, best: bestNode, check: checkNodes } = useAccelerator()
+  const {
+    health: relayHealth,
+    latency: relayLatency,
+    submitting: relaySubmitting,
+    check: checkRelay,
+    submit: submitRelay,
+  } = useRelay(FEEDBACK_RELAY_URL)
+  const submitBusy = relaySubmitting
 
   const type = useMemo(() => issueTypes.find((t) => t.id === typeId)!, [typeId])
   const option = useMemo(() => moduleOptions.find((m) => m.id === moduleId) ?? moduleOptions[3], [moduleId])
@@ -62,6 +79,7 @@ export function Feedback() {
     if (typeof IntersectionObserver === 'undefined') {
       void checkReach()
       void checkNodes()
+      void checkRelay()
       return
     }
     const observer = new IntersectionObserver(
@@ -70,13 +88,14 @@ export function Feedback() {
           observer.disconnect()
           void checkReach()
           void checkNodes()
+          void checkRelay()
         }
       },
       { rootMargin: '240px' },
     )
     observer.observe(el)
     return () => observer.disconnect()
-  }, [checkReach, checkNodes])
+  }, [checkReach, checkNodes, checkRelay])
 
   const copyReport = async () => {
     const text = buildReportText(type, moduleId)
@@ -106,6 +125,30 @@ export function Feedback() {
     URL.revokeObjectURL(url)
     setDownloaded(true)
     window.setTimeout(() => setDownloaded(false), 2400)
+  }
+
+  const submitByRelay = async () => {
+    setSubmitState('idle')
+    setSubmitMessage('')
+    // 标题与正文沿用与表单深链完全相同的草稿，两处内容不会各说各话
+    const draft = buildReportDraft(type, moduleId)
+    const result = await submitRelay({
+      type: typeId,
+      module: moduleId,
+      summary: summary.trim(),
+      body: draft.body,
+      contact: contact.trim(),
+      titlePrefix: type.titlePrefix,
+      moduleTag: option.titleTag,
+      honeypot,
+    })
+    if (result.ok) {
+      setSubmitState('ok')
+      setIssueUrl(result.url)
+    } else {
+      setSubmitState('error')
+      setSubmitMessage(result.error)
+    }
   }
 
   const copy = async () => {
@@ -209,6 +252,84 @@ export function Feedback() {
               </>
             ) : null}
           </div>
+
+          {FEEDBACK_RELAY_URL ? (
+            <div className="mt-4 border-t border-dashed border-line pt-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <h4 className="text-[0.92rem] font-semibold text-ink">经中继直接提交</h4>
+                <span className="text-[0.82rem] text-ink-soft">
+                  {relayHealth === 'checking' ? '正在检测中继…' : null}
+                  {relayHealth === 'ok' ? `中继可用（${relayLatency} ms）` : null}
+                  {relayHealth === 'fail' ? '中继不可用，请改用复制或下载。' : null}
+                  {relayHealth === 'idle' ? '尚未检测中继。' : null}
+                </span>
+              </div>
+              <p className="mt-2 text-[0.85rem] leading-relaxed text-ink-soft">
+                提交后由维护者的中继调用 GitHub API 建 issue，浏览器不需要能打开 github.com。
+                令牌只保存在中继上。标题由问题类型、涉及模块与下面这句概述拼成。
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-[1.6fr_1fr]">
+                <label className="text-[0.84rem] text-ink-soft">
+                  问题概述（会写进标题）
+                  <input
+                    type="text"
+                    value={summary}
+                    maxLength={120}
+                    onChange={(event) => setSummary(event.target.value)}
+                    placeholder="例如：伙伴在工作时不会拾取掉落物"
+                    className="mt-1 w-full rounded-md border border-line bg-paper-sunk/50 px-3 py-2 text-[0.88rem] text-ink"
+                  />
+                </label>
+                <label className="text-[0.84rem] text-ink-soft">
+                  联系方式（可选，方便追问）
+                  <input
+                    type="text"
+                    value={contact}
+                    maxLength={120}
+                    onChange={(event) => setContact(event.target.value)}
+                    placeholder="QQ / 邮箱 / 论坛 ID"
+                    className="mt-1 w-full rounded-md border border-line bg-paper-sunk/50 px-3 py-2 text-[0.88rem] text-ink"
+                  />
+                </label>
+              </div>
+              {/* 蜜罐：正常用户看不见，只有脚本会填 */}
+              <input
+                type="text"
+                value={honeypot}
+                onChange={(event) => setHoneypot(event.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                className="hidden"
+              />
+              <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-2 text-[0.86rem]">
+                <button
+                  type="button"
+                  disabled={submitBusy || summary.trim().length < 4}
+                  onClick={() => void submitByRelay()}
+                  className="rounded-md border border-seal px-4 py-2 text-seal transition-colors hover:bg-paper-sunk disabled:cursor-not-allowed disabled:border-line disabled:text-ink-faint"
+                >
+                  {submitBusy ? '正在提交…' : '直接提交到 issue 区'}
+                </button>
+                {submitState === 'ok' && issueUrl ? (
+                  <span role="status" aria-live="polite">
+                    已创建：
+                    <a href={issueUrl} target="_blank" rel="noreferrer noopener" className="link-quiet ml-1">
+                      {issueUrl.replace('https://github.com/', '')}
+                    </a>
+                  </span>
+                ) : null}
+                {submitState === 'error' ? (
+                  <span role="status" aria-live="polite" className="text-seal">
+                    提交失败：{submitMessage}
+                  </span>
+                ) : null}
+                {submitState === 'idle' && summary.trim().length < 4 ? (
+                  <span className="text-ink-faint">填写问题概述后即可提交。</span>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
 
           <hr className="rule my-3" />
           <p className="text-[0.86rem] leading-relaxed text-ink-soft">

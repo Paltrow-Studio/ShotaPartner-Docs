@@ -47,6 +47,15 @@ export const REPO_README_RAW = `https://raw.githubusercontent.com/${ORG}/${REPO}
 export const FALLBACK_FEEDBACK_URL = ''
 export const FALLBACK_FEEDBACK_LABEL = '国内反馈表单'
 
+/**
+ * 反馈中继地址（见 relay/README.md）。留空时页面完全不显示「直接提交」按钮，
+ * 只保留复制 / 下载草稿与表单深链。
+ *
+ * 构建期可用 VITE_RELAY_URL 覆盖，便于本地联调：
+ *   VITE_RELAY_URL=http://127.0.0.1:8787 npm run build
+ */
+export const FEEDBACK_RELAY_URL = import.meta.env.VITE_RELAY_URL ?? ''
+
 /** 本站的国内镜像地址，留空则不显示。用于 github.io 本身访问受限的情况。 */
 export const SITE_MIRROR_URL = ''
 
