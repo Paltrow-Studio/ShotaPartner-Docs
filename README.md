@@ -83,11 +83,38 @@ src/
 | 常见问题 | `src/data/faq.ts` |
 | 反馈类型 / 模块选项 / 预填逻辑 | `src/data/feedback.ts` |
 | 配色、纸面质感、字体 | `src/index.css`（`:root` 与 `[data-theme='dark']` 两套变量） |
+| 站点图标 / 分享图 | `scripts/make-icons.py` 重新生成，见下节 |
 
 `guide.ts` 里每章由若干内容块组成，可用的 `kind`：
 `p`（段落，支持 `` `代码` ``、`**加粗**`、`[文字](链接)`）、`sub`（小标题）、`list`、`steps`、`keys`、`table`、`note`（批注）。
 
 改动后请跑一次 `npm run build`（含类型检查）再提交；CI 会用同样的命令构建。
+
+## 站点图标
+
+图标直接使用项目 logo：`assets/brand/paltrow_studio_logo_mods.png`，取自 ShotaPartner-Core 的
+`src/main/resources/assets/shota_partner/textures/gui/paltrow_studio_logo_mods.png`——
+即 mods.toml 中 `logoFile` 指向的「256×256 纯图形版」，也是游戏内 Screen 底部水印用的那张
+（同一张的 800×800 变体是带留白的另一版，图标一律用 256 纯图形版）。
+
+`public/` 下的图标全部由脚本生成，不要手改：
+
+```bash
+python3 scripts/make-icons.py          # 重新生成
+python3 scripts/make-icons.py --check  # 只校验尺寸与不透明度
+```
+
+脚本做的事：
+
+1. 按 alpha 通道裁掉透明留白，再按尺寸留不同边距居中合成（16px 不放边距，512px 留 10%）。
+2. 生成透明底 PNG（favicon-32）、多尺寸 ICO（16/32/48）、纸底不透明贴图（apple-touch 180、192、512）。
+3. `favicon.svg` 内嵌 160px 标记，并用 SVG 内的 `prefers-color-scheme` 把底色在纸色
+   `#f3eee2` 与墨色 `#241f18` 之间切换——浏览器用深色标签栏时图标不会糊成一片。
+   标记只有两色，内嵌图统一用 128 色调色板量化，7.7 KB 而不是 33 KB。
+4. `og-image.png`：1200×630 纸面卡片，左侧 logo、右侧「伙伴物语 / Partner Monogatari /
+   玩法说明与问题反馈」与版本信息，右下角站点地址。
+
+需要换 logo 时：替换 `assets/brand/` 下的源图，跑一次脚本并 `npm run build` 即可，文件清单无需改动。
 
 ## 国内网络下的访问与反馈
 
