@@ -11,6 +11,12 @@ import type { ModuleId } from './modules'
 
 export type IssueTypeId = 'bug' | 'crash' | 'compatibility' | 'feature'
 
+export type ReportDraft = {
+  title: string
+  labels: string
+  body: string
+}
+
 export type IssueType = {
   id: IssueTypeId
   /** .github/ISSUE_TEMPLATE/ 下的文件名 */
@@ -101,6 +107,118 @@ export function buildIssueUrl(type: IssueType, moduleId: ModuleId | 'unknown'): 
     labels: type.labels,
   })
   return `${ISSUES_NEW}?${params.toString()}`
+}
+
+/**
+ * 各类问题对应的填写框架。字段与 .github/ISSUE_TEMPLATE/*.yml 中的 label 同名，
+ * 因此复制出来的内容既可直接粘进表单，也可作为聊天或邮件里的完整反馈正文。
+ */
+const reportScaffold: Record<IssueTypeId, { heading: string; lines: string[] }[]> = {
+  bug: [
+    {
+      heading: '环境',
+      lines: [
+        '- 模组版本：',
+        '- Forge 版本：',
+        '- 运行环境：（单人 / 局域网 / 专用服务端）',
+        '- Java 版本：',
+        '- 是否使用整合包：',
+        '- 模组列表：',
+      ],
+    },
+    { heading: '复现步骤', lines: ['1. ', '2. ', '3. '] },
+    { heading: '期望结果', lines: [''] },
+    { heading: '实际结果', lines: [''] },
+    { heading: '复现频率', lines: ['- （每次 / 偶尔 / 仅出现过一次）'] },
+    { heading: '最小环境验证', lines: ['- （是否在只有 Forge 加本模组及前置的环境下复现）'] },
+    { heading: '完整日志链接', lines: ['- （mclo.gs 或 Gist）'] },
+    { heading: '相关日志片段', lines: ['```', '', '```'] },
+    { heading: '截图 / 录屏', lines: [''] },
+    { heading: '补充说明', lines: [''] },
+  ],
+  crash: [
+    { heading: '崩溃阶段', lines: ['- （启动 / 进入世界 / 游玩中 / 退出）'] },
+    { heading: '崩溃报告 / 日志链接', lines: ['- （mclo.gs 或 Gist）'] },
+    { heading: '崩溃栈关键片段', lines: ['```', '', '```'] },
+    { heading: '报告指出的可疑模组', lines: ['- '] },
+    {
+      heading: '环境',
+      lines: [
+        '- 模组版本：',
+        '- Forge 版本：',
+        '- 运行环境：（单人 / 局域网 / 专用服务端）',
+        '- Java 版本：',
+        '- 是否使用整合包：',
+        '- 模组列表：',
+      ],
+    },
+    { heading: '复现步骤', lines: ['1. ', '2. ', '3. '] },
+    { heading: '期望结果', lines: [''] },
+    { heading: '实际结果', lines: [''] },
+    { heading: '复现频率', lines: ['- （每次 / 偶尔 / 仅出现过一次）'] },
+    { heading: '最小环境验证', lines: ['- '] },
+  ],
+  compatibility: [
+    { heading: '问题类型', lines: ['- （与其它模组冲突 / 整合包异常 / 专用服务端异常 / 学校维度缺方块）'] },
+    { heading: '相关模组', lines: ['- '] },
+    { heading: '移除该模组后是否恢复', lines: ['- '] },
+    { heading: '二分定位到的模组', lines: ['- '] },
+    { heading: '前置依赖是否齐全', lines: ['- '] },
+    {
+      heading: '环境',
+      lines: [
+        '- 模组版本：',
+        '- Forge 版本：',
+        '- 运行环境：（单人 / 局域网 / 专用服务端）',
+        '- Java 版本：',
+        '- 是否使用整合包：',
+        '- 模组列表：',
+      ],
+    },
+    { heading: '复现步骤', lines: ['1. ', '2. ', '3. '] },
+    { heading: '期望结果', lines: [''] },
+    { heading: '实际结果', lines: [''] },
+    { heading: '复现频率', lines: ['- '] },
+    { heading: '最小环境验证', lines: ['- '] },
+    { heading: '完整日志链接', lines: ['- （mclo.gs 或 Gist）'] },
+    { heading: '补充说明', lines: [''] },
+  ],
+  feature: [
+    { heading: '想解决的问题', lines: [''] },
+    { heading: '期望的方案', lines: [''] },
+    { heading: '考虑过的替代方案', lines: [''] },
+    { heading: '是否可能影响兼容性', lines: ['- '] },
+    { heading: '参考', lines: ['- '] },
+    { heading: '补充说明', lines: [''] },
+  ],
+}
+
+/**
+ * 生成与表单字段一致的反馈草稿。
+ * 不依赖网络：GitHub 无法访问时，可复制或下载后通过其他渠道提交。
+ */
+export function buildReportDraft(type: IssueType, moduleId: ModuleId | 'unknown'): ReportDraft {
+  const option = moduleOptions.find((m) => m.id === moduleId) ?? moduleOptions[3]
+  const body = [
+    `**涉及模块**：${option.formOption}`,
+    '',
+    ...reportScaffold[type.id].map((section) => `### ${section.heading}\n${section.lines.join('\n')}`),
+  ].join('\n\n')
+  return { title: `${type.titlePrefix} [${option.titleTag}] `, labels: type.labels, body }
+}
+
+/** 生成可复制的纯文本反馈草稿（含标题、标签与提交地址，便于转发）。 */
+export function buildReportText(type: IssueType, moduleId: ModuleId | 'unknown'): string {
+  const draft = buildReportDraft(type, moduleId)
+  return [
+    `标题：${draft.title}`,
+    `标签：${draft.labels}`,
+    `表单：${buildIssueUrl(type, moduleId)}`,
+    '（若无法访问 GitHub，可将以上标题与下列正文一并发送给维护者）',
+    '',
+    draft.body,
+    '',
+  ].join('\n')
 }
 
 export const reportChecklist: { title: string; desc: string }[] = [

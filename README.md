@@ -89,6 +89,33 @@ src/
 
 改动后请跑一次 `npm run build`（含类型检查）再提交；CI 会用同样的命令构建。
 
+## 国内网络下的访问与反馈
+
+GitHub 在国内经常无法直接访问，这一点没有办法靠前端绕过，因此页面做了两件事：
+
+1. **检测与说明**：反馈区进入视口后会用 6 秒超时探测 `github.com`；连不上时明确写出「issue 表单需要在 github.com 登录后填写，国内的文件加速镜像只能转发 Releases / Raw 等文件路径，无法代理表单与登录页」，而不是让用户点开一个打不开的链接。
+2. **不依赖 GitHub 的反馈内容生成**：反馈区把「标题 + 标签 + 与表单字段一一对应的正文框架」生成好，可一键复制或下载为 `.md` 文件（文件名形如 `伙伴物语-反馈-crash-2026-09-30.md`）。用户可以在任何能访问 GitHub 的环境里粘进表单，也可以直接把文件发给维护者。
+
+### 实测结论（2026-09）
+
+| 方案 | 结果 |
+| --- | --- |
+| `github.com` 直连 | issue 表单 302 跳登录页，属正常行为 |
+| gh-proxy.com / ghfast.top / ghproxy.net | `releases/download`、`archive/refs/heads/*.zip`、`raw.githubusercontent.com` 返回 200，但仓库 HTML 页面返回 403 或镜像自带的 404 页 |
+| kkgithub.com / bgithub.xyz / hub.gitmirror.com / github.moeyy.xyz | 无法连通或拒绝服务 |
+
+因此**没有任何国内镜像可以承载 issue 表单与登录流程**。若确实需要在国内直接收集反馈，只能自建中转（例如 Cloudflare Worker + GitHub Token 代发 issue），代价是需要维护一个服务并保管有写权限的 token，与本仓库「纯静态、零后端」的定位冲突，故未采用。
+
+### 相关配置（`src/data/site.ts`）
+
+| 常量 | 作用 |
+| --- | --- |
+| `GITHUB_FILE_MIRRORS` | 页面在连不上 GitHub 时列出的下载加速前缀，可自行增删 |
+| `FALLBACK_FEEDBACK_URL` / `FALLBACK_FEEDBACK_LABEL` | 国内备用反馈渠道（问卷、表单等）；**留空则不显示该入口** |
+| `SITE_MIRROR_URL` | 本站的国内镜像地址（例如另建的 Gitee Pages / Cloudflare Pages）；留空则不显示 |
+
+填好后跑一次 `npm run build` 即可，无需改动组件代码。
+
 ## 反馈区（issue 区）说明
 
 四个 Issue Form 都在 [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE)：

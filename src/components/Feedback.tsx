@@ -1,21 +1,43 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   buildIssueUrl,
+  buildReportText,
   issueTypes,
   moduleOptions,
   reportAntiPatterns,
   reportChecklist,
   type IssueTypeId,
 } from '../data/feedback'
-import { DISCUSSIONS, GITHUB_REPO, ISSUES } from '../data/site'
+import {
+  DISCUSSIONS,
+  FALLBACK_FEEDBACK_LABEL,
+  FALLBACK_FEEDBACK_URL,
+  GITHUB_FILE_MIRRORS,
+  GITHUB_REPO,
+  ISSUES,
+  SITE_MIRROR_URL,
+} from '../data/site'
+import { useGithubReach } from '../lib/reach'
 import type { ModuleId } from '../data/modules'
 import { Sheet } from './paper'
 import { Reveal } from './Reveal'
+
+const reachText: Record<string, string> = {
+  idle: '尚未检测 GitHub 连接。',
+  checking: '正在检测 GitHub 连接，最长等待 6 秒…',
+  ok: 'GitHub 可正常访问，可直接打开表单提交。',
+  blocked: '无法连接 github.com（被拦截或超时）。',
+}
 
 export function Feedback() {
   const [typeId, setTypeId] = useState<IssueTypeId>('bug')
   const [moduleId, setModuleId] = useState<ModuleId | 'unknown'>('core')
   const [copied, setCopied] = useState(false)
+  const [copyState, setCopyState] = useState<'idle' | 'ok' | 'manual'>('idle')
+  const [downloaded, setDownloaded] = useState(false)
+  const sectionRef = useRef<HTMLElement | null>(null)
+  const manualRef = useRef<HTMLTextAreaElement | null>(null)
+  const { state: reach, check: checkReach } = useGithubReach()
 
   const type = useMemo(() => issueTypes.find((t) => t.id === typeId)!, [typeId])
   const option = useMemo(() => moduleOptions.find((m) => m.id === moduleId) ?? moduleOptions[3], [moduleId])
@@ -23,6 +45,57 @@ export function Feedback() {
   const searchUrl = `${ISSUES}?q=${encodeURIComponent(
     `is:issue ${option.titleTag === '未确定' ? '' : option.titleTag}`.trim(),
   )}`
+
+  // 反馈区进入视口后再探测，避免每次进页面都发出跨站请求
+  useEffect(() => {
+    const el = sectionRef.current
+    if (!el) return
+    if (typeof IntersectionObserver === 'undefined') {
+      void checkReach()
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          observer.disconnect()
+          void checkReach()
+        }
+      },
+      { rootMargin: '240px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [checkReach])
+
+  const copyReport = async () => {
+    const text = buildReportText(type, moduleId)
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopyState('ok')
+      window.setTimeout(() => setCopyState('idle'), 2400)
+    } catch {
+      setCopyState('manual')
+      window.setTimeout(() => {
+        manualRef.current?.focus()
+        manualRef.current?.select()
+      }, 0)
+    }
+  }
+
+  const downloadReport = () => {
+    const text = buildReportText(type, moduleId)
+    const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `伙伴物语-反馈-${type.id}-${new Date().toISOString().slice(0, 10)}.md`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+    setDownloaded(true)
+    window.setTimeout(() => setDownloaded(false), 2400)
+  }
 
   const copy = async () => {
     try {
@@ -35,7 +108,11 @@ export function Feedback() {
   }
 
   return (
-    <section id="feedback" className="mx-auto w-full max-w-6xl scroll-mt-24 px-5 pt-16 sm:px-6">
+    <section
+      id="feedback"
+      ref={sectionRef}
+      className="mx-auto w-full max-w-6xl scroll-mt-24 px-5 pt-16 sm:px-6"
+    >
       <div className="flex items-center gap-3">
         <span className="chapter-mark">反馈</span>
         <span className="h-px flex-1 bg-line" />
@@ -45,6 +122,94 @@ export function Feedback() {
         三个模组仓库未公开，玩家反馈统一提交至本页所在仓库，issue 区对所有人可见。
         在下方选择问题类型与涉及的模块，表单的标题与标签会自动预填，其余内容在 GitHub 上补齐后提交。
       </p>
+
+      <Reveal className="mt-6">
+        <Sheet className="p-5 sm:p-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+            <h3 className="text-[1rem] font-semibold text-ink">连接检测与反馈内容生成</h3>
+            <div className="flex flex-wrap items-baseline gap-3 text-[0.82rem] text-ink-soft">
+              <span
+                role="status"
+                aria-live="polite"
+                className={reach === 'blocked' ? 'text-seal' : undefined}
+              >
+                {reachText[reach]}
+              </span>
+              <button type="button" onClick={() => void checkReach()} className="link-quiet text-ink-soft">
+                重新检测
+              </button>
+            </div>
+          </div>
+          <hr className="rule my-3" />
+          <p className="text-[0.86rem] leading-relaxed text-ink-soft">
+            下列内容与表单字段一一对应，可直接粘进表单；GitHub 无法打开时，也可复制或下载后发送给维护者。
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-3 text-[0.88rem]">
+            <button
+              type="button"
+              onClick={() => void copyReport()}
+              className="rounded-md border border-seal px-4 py-2 text-seal transition-colors hover:bg-paper-sunk"
+            >
+              {copyState === 'ok' ? '已复制完整反馈内容' : '复制完整反馈内容'}
+            </button>
+            <button type="button" onClick={downloadReport} className="link-quiet text-ink-soft">
+              {downloaded ? '已下载 .md 文件' : '下载为 .md 文件'}
+            </button>
+            {FALLBACK_FEEDBACK_URL ? (
+              <a
+                href={FALLBACK_FEEDBACK_URL}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="link-quiet text-ink-soft"
+              >
+                {FALLBACK_FEEDBACK_LABEL}
+              </a>
+            ) : null}
+            {SITE_MIRROR_URL ? (
+              <a href={SITE_MIRROR_URL} className="link-quiet text-ink-soft">
+                本站国内镜像
+              </a>
+            ) : null}
+          </div>
+
+          {copyState === 'manual' ? (
+            <div className="mt-3">
+              <p className="text-[0.82rem] text-ink-soft">
+                浏览器拦截了自动复制，请在下方全选复制：
+              </p>
+              <textarea
+                ref={manualRef}
+                readOnly
+                value={buildReportText(type, moduleId)}
+                className="mt-2 h-40 w-full resize-y rounded-md border border-line bg-paper-sunk/60 p-3 font-mono text-[0.78rem] leading-relaxed text-ink"
+              />
+            </div>
+          ) : null}
+
+          {reach === 'blocked' ? (
+            <div className="mt-4 border-l-2 border-l-seal/60 bg-paper-sunk/70 py-3 pl-4 pr-3 text-[0.86rem] leading-relaxed text-ink-soft">
+              <p>
+                issue 表单需要在 github.com 登录后填写；国内的文件加速镜像只能转发 Releases / Raw
+                这类文件路径，<span className="text-ink">无法代理表单与登录页</span>。
+                可先复制或下载上面的反馈内容，再通过可用的网络环境、官方发布帖或玩家群提交。
+              </p>
+              <details className="mt-2">
+                <summary className="cursor-pointer text-ink">
+                  可用的 GitHub 文件加速镜像（仅用于下载）
+                </summary>
+                <ul className="mt-2 space-y-1">
+                  {GITHUB_FILE_MIRRORS.map((mirror) => (
+                    <li key={mirror.prefix}>
+                      <code>{mirror.prefix}https://github.com/…</code>
+                      <span className="ml-2 text-[0.8rem] text-ink-faint">{mirror.label}</span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </div>
+          ) : null}
+        </Sheet>
+      </Reveal>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.15fr_1fr]">
         <Reveal>
@@ -206,14 +371,19 @@ export function Feedback() {
                       href={buildIssueUrl(item, moduleId)}
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="link-quiet inline-block py-0.5 text-ink-soft"
+                      className="link-quiet inline-block py-1 text-ink-soft"
                     >
                       {item.name}
                     </a>
                   </li>
                 ))}
                 <li className="pt-1">
-                  <a href={ISSUES} target="_blank" rel="noreferrer noopener" className="link-quiet text-ink-soft">
+                  <a
+                    href={ISSUES}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="link-quiet inline-block py-1 text-ink-soft"
+                  >
                     浏览全部 issue
                   </a>
                 </li>
@@ -222,7 +392,7 @@ export function Feedback() {
                     href={DISCUSSIONS}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="link-quiet text-ink-soft"
+                    className="link-quiet inline-block py-1 text-ink-soft"
                   >
                     讨论区（提问与交流）
                   </a>
@@ -232,7 +402,7 @@ export function Feedback() {
                     href={GITHUB_REPO}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="link-quiet text-ink-soft"
+                    className="link-quiet inline-block py-1 text-ink-soft"
                   >
                     本仓库首页
                   </a>

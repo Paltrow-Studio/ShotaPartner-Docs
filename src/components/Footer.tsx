@@ -30,7 +30,7 @@ export function Footer() {
                     href={link.href}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="link-quiet inline-block py-0.5 text-ink-soft"
+                    className="link-quiet inline-block py-1 text-ink-soft"
                   >
                     {link.label}
                   </a>
