@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   buildIssueUrl,
   buildReportDraft,
-  buildReportText,
   issueTypes,
   moduleOptions,
   reportAntiPatterns,
@@ -16,36 +15,17 @@ import {
   FEEDBACK_RELAY_URL,
   GITHUB_REPO,
   ISSUES,
-  REPO_ARCHIVE,
-  REPO_README_RAW,
   SITE_MIRROR_URL,
 } from '../data/site'
-import { accelerated, useAccelerator } from '../lib/accelerator'
 import { useRelay } from '../lib/relay'
-import { useGithubReach } from '../lib/reach'
 import type { ModuleId } from '../data/modules'
 import { Sheet } from './paper'
 import { Reveal } from './Reveal'
-
-const reachText: Record<string, string> = {
-  idle: '尚未检测 GitHub 连接。',
-  checking: '正在检测 GitHub 连接，最长等待 6 秒…',
-  ok: 'GitHub 可正常访问，可直接打开表单提交。',
-  blocked: '无法连接 github.com（被拦截或超时）。',
-}
-
-const nodeText: Record<string, string> = {
-  checking: '计时中',
-  ok: '可用',
-  fail: '不可用',
-}
 
 export function Feedback() {
   const [typeId, setTypeId] = useState<IssueTypeId>('bug')
   const [moduleId, setModuleId] = useState<ModuleId | 'unknown'>('core')
   const [copied, setCopied] = useState(false)
-  const [copyState, setCopyState] = useState<'idle' | 'ok' | 'manual'>('idle')
-  const [downloaded, setDownloaded] = useState(false)
   const [summary, setSummary] = useState('')
   const [contact, setContact] = useState('')
   const [honeypot, setHoneypot] = useState('')
@@ -53,17 +33,13 @@ export function Feedback() {
   const [submitMessage, setSubmitMessage] = useState('')
   const [issueUrl, setIssueUrl] = useState('')
   const sectionRef = useRef<HTMLElement | null>(null)
-  const manualRef = useRef<HTMLTextAreaElement | null>(null)
-  const { state: reach, check: checkReach } = useGithubReach()
-  const { rows: nodes, phase: nodePhase, best: bestNode, check: checkNodes } = useAccelerator()
   const {
     health: relayHealth,
     latency: relayLatency,
-    submitting: relaySubmitting,
+    submitting: submitBusy,
     check: checkRelay,
     submit: submitRelay,
   } = useRelay(FEEDBACK_RELAY_URL)
-  const submitBusy = relaySubmitting
 
   const type = useMemo(() => issueTypes.find((t) => t.id === typeId)!, [typeId])
   const option = useMemo(() => moduleOptions.find((m) => m.id === moduleId) ?? moduleOptions[3], [moduleId])
@@ -72,13 +48,11 @@ export function Feedback() {
     `is:issue ${option.titleTag === '未确定' ? '' : option.titleTag}`.trim(),
   )}`
 
-  // 反馈区进入视口后再探测，避免每次进页面都发出跨站请求
+  // 配置了中继地址时，反馈区进入视口再探测；地址为空时该函数直接返回，不发任何请求
   useEffect(() => {
     const el = sectionRef.current
     if (!el) return
     if (typeof IntersectionObserver === 'undefined') {
-      void checkReach()
-      void checkNodes()
       void checkRelay()
       return
     }
@@ -86,8 +60,6 @@ export function Feedback() {
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
           observer.disconnect()
-          void checkReach()
-          void checkNodes()
           void checkRelay()
         }
       },
@@ -95,37 +67,7 @@ export function Feedback() {
     )
     observer.observe(el)
     return () => observer.disconnect()
-  }, [checkReach, checkNodes, checkRelay])
-
-  const copyReport = async () => {
-    const text = buildReportText(type, moduleId)
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopyState('ok')
-      window.setTimeout(() => setCopyState('idle'), 2400)
-    } catch {
-      setCopyState('manual')
-      window.setTimeout(() => {
-        manualRef.current?.focus()
-        manualRef.current?.select()
-      }, 0)
-    }
-  }
-
-  const downloadReport = () => {
-    const text = buildReportText(type, moduleId)
-    const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `伙伴物语-反馈-${type.id}-${new Date().toISOString().slice(0, 10)}.md`
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    URL.revokeObjectURL(url)
-    setDownloaded(true)
-    window.setTimeout(() => setDownloaded(false), 2400)
-  }
+  }, [checkRelay])
 
   const submitByRelay = async () => {
     setSubmitState('idle')
@@ -176,224 +118,6 @@ export function Feedback() {
         三个模组仓库未公开，玩家反馈统一提交至本页所在仓库，issue 区对所有人可见。
         在下方选择问题类型与涉及的模块，表单的标题与标签会自动预填，其余内容在 GitHub 上补齐后提交。
       </p>
-
-      <Reveal className="mt-6">
-        <Sheet className="p-5 sm:p-6">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-            <h3 className="text-[1rem] font-semibold text-ink">连接检测与反馈内容生成</h3>
-            <div className="flex flex-wrap items-baseline gap-3 text-[0.82rem] text-ink-soft">
-              <span
-                role="status"
-                aria-live="polite"
-                className={reach === 'blocked' ? 'text-seal' : undefined}
-              >
-                {reachText[reach]}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  void checkReach()
-                  void checkNodes()
-                }}
-                className="link-quiet text-ink-soft"
-              >
-                重新检测
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-3 border-t border-dashed border-line pt-3 text-[0.84rem] leading-relaxed text-ink-soft">
-            <p>
-              <span className="text-ink">资源线路自动测试</span>
-              {nodePhase === 'idle' ? '：本区进入视口后自动开始。' : null}
-              {nodePhase === 'testing'
-                ? '：正在用你当前的网络逐个节点下载同一个文件并计时，单节点最长 8 秒。'
-                : null}
-              {nodePhase === 'done' && bestNode
-                ? `：实测最快为 ${bestNode.label}（${bestNode.ms} ms），已自动用于下面的资源链接。`
-                : null}
-              {nodePhase === 'done' && !bestNode ? '：全部节点不可用，资源链接保持直连。' : null}
-            </p>
-            {nodePhase === 'done' ? (
-              <>
-                <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[0.8rem]">
-                  {nodes.map((node) => (
-                    <li key={node.id} className={node.state === 'ok' ? 'text-ink' : 'text-ink-faint'}>
-                      {node.state === 'ok'
-                        ? `${node.label} ${node.ms} ms`
-                        : `${node.label} ${nodeText[node.state]}${node.note ? `（${node.note}）` : ''}`}
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-2">
-                  节点只转发 raw、archive 与 release 一类文件路径。仓库页、issue 页与登录页属于
-                  HTML 页面，节点一律返回 403 或 404，因此
-                  <span className="text-ink">表单提交无法经节点完成</span>。
-                </p>
-                <p className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                  <a
-                    href={accelerated(bestNode?.prefix ?? '', REPO_ARCHIVE)}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="link-quiet"
-                  >
-                    下载本站源码 zip
-                  </a>
-                  <a
-                    href={accelerated(bestNode?.prefix ?? '', REPO_README_RAW)}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="link-quiet"
-                  >
-                    查看 README（raw）
-                  </a>
-                  <span className="text-ink-faint">当前线路：{bestNode ? bestNode.label : '直连'}</span>
-                </p>
-              </>
-            ) : null}
-          </div>
-
-          {FEEDBACK_RELAY_URL ? (
-            <div className="mt-4 border-t border-dashed border-line pt-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <h4 className="text-[0.92rem] font-semibold text-ink">经中继直接提交</h4>
-                <span className="text-[0.82rem] text-ink-soft">
-                  {relayHealth === 'checking' ? '正在检测中继…' : null}
-                  {relayHealth === 'ok' ? `中继可用（${relayLatency} ms）` : null}
-                  {relayHealth === 'fail' ? '中继不可用，请改用复制或下载。' : null}
-                  {relayHealth === 'idle' ? '尚未检测中继。' : null}
-                </span>
-              </div>
-              <p className="mt-2 text-[0.85rem] leading-relaxed text-ink-soft">
-                提交后由维护者的中继调用 GitHub API 建 issue，浏览器不需要能打开 github.com。
-                令牌只保存在中继上。标题由问题类型、涉及模块与下面这句概述拼成。
-              </p>
-              <div className="mt-3 grid gap-3 sm:grid-cols-[1.6fr_1fr]">
-                <label className="text-[0.84rem] text-ink-soft">
-                  问题概述（会写进标题）
-                  <input
-                    type="text"
-                    value={summary}
-                    maxLength={120}
-                    onChange={(event) => setSummary(event.target.value)}
-                    placeholder="例如：伙伴在工作时不会拾取掉落物"
-                    className="mt-1 w-full rounded-md border border-line bg-paper-sunk/50 px-3 py-2 text-[0.88rem] text-ink"
-                  />
-                </label>
-                <label className="text-[0.84rem] text-ink-soft">
-                  联系方式（可选，方便追问）
-                  <input
-                    type="text"
-                    value={contact}
-                    maxLength={120}
-                    onChange={(event) => setContact(event.target.value)}
-                    placeholder="QQ / 邮箱 / 论坛 ID"
-                    className="mt-1 w-full rounded-md border border-line bg-paper-sunk/50 px-3 py-2 text-[0.88rem] text-ink"
-                  />
-                </label>
-              </div>
-              {/* 蜜罐：正常用户看不见，只有脚本会填 */}
-              <input
-                type="text"
-                value={honeypot}
-                onChange={(event) => setHoneypot(event.target.value)}
-                tabIndex={-1}
-                autoComplete="off"
-                aria-hidden="true"
-                className="hidden"
-              />
-              <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-2 text-[0.86rem]">
-                <button
-                  type="button"
-                  disabled={submitBusy || summary.trim().length < 4 || relayHealth !== 'ok'}
-                  onClick={() => void submitByRelay()}
-                  className="rounded-md border border-seal px-4 py-2 text-seal transition-colors hover:bg-paper-sunk disabled:cursor-not-allowed disabled:border-line disabled:text-ink-faint"
-                >
-                  {submitBusy ? '正在提交…' : '直接提交到 issue 区'}
-                </button>
-                {submitState === 'ok' && issueUrl ? (
-                  <span role="status" aria-live="polite">
-                    已创建：
-                    <a href={issueUrl} target="_blank" rel="noreferrer noopener" className="link-quiet ml-1">
-                      {issueUrl.replace('https://github.com/', '')}
-                    </a>
-                  </span>
-                ) : null}
-                {submitState === 'error' ? (
-                  <span role="status" aria-live="polite" className="text-seal">
-                    提交失败：{submitMessage}
-                  </span>
-                ) : null}
-                {submitState !== 'ok' && relayHealth === 'fail' ? (
-                  <span className="text-ink-faint">中继探测未通过，按钮已停用；请改用复制或下载。</span>
-                ) : null}
-                {submitState === 'idle' && relayHealth === 'ok' && summary.trim().length < 4 ? (
-                  <span className="text-ink-faint">填写问题概述后即可提交。</span>
-                ) : null}
-                {relayHealth === 'checking' ? (
-                  <span className="text-ink-faint">正在探测中继…</span>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
-
-          <hr className="rule my-3" />
-          <p className="text-[0.86rem] leading-relaxed text-ink-soft">
-            下列内容与表单字段一一对应，可直接粘进表单；GitHub 无法打开时，也可复制或下载后发送给维护者。
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-3 text-[0.88rem]">
-            <button
-              type="button"
-              onClick={() => void copyReport()}
-              className="rounded-md border border-seal px-4 py-2 text-seal transition-colors hover:bg-paper-sunk"
-            >
-              {copyState === 'ok' ? '已复制完整反馈内容' : '复制完整反馈内容'}
-            </button>
-            <button type="button" onClick={downloadReport} className="link-quiet text-ink-soft">
-              {downloaded ? '已下载 .md 文件' : '下载为 .md 文件'}
-            </button>
-            {FALLBACK_FEEDBACK_URL ? (
-              <a
-                href={FALLBACK_FEEDBACK_URL}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="link-quiet text-ink-soft"
-              >
-                {FALLBACK_FEEDBACK_LABEL}
-              </a>
-            ) : null}
-            {SITE_MIRROR_URL ? (
-              <a href={SITE_MIRROR_URL} className="link-quiet text-ink-soft">
-                本站国内镜像
-              </a>
-            ) : null}
-          </div>
-
-          {copyState === 'manual' ? (
-            <div className="mt-3">
-              <p className="text-[0.82rem] text-ink-soft">
-                浏览器拦截了自动复制，请在下方全选复制：
-              </p>
-              <textarea
-                ref={manualRef}
-                readOnly
-                value={buildReportText(type, moduleId)}
-                className="mt-2 h-40 w-full resize-y rounded-md border border-line bg-paper-sunk/60 p-3 font-mono text-[0.78rem] leading-relaxed text-ink"
-              />
-            </div>
-          ) : null}
-
-          {reach === 'blocked' ? (
-            <div className="mt-4 border-l-2 border-l-seal/60 bg-paper-sunk/70 py-3 pl-4 pr-3 text-[0.86rem] leading-relaxed text-ink-soft">
-              <p>
-                当前网络无法打开 github.com，而 issue 表单需要在 github.com 登录后填写。上面的自动测试已按你的
-                网络挑出可用的资源线路，但资源线路无法承载表单与登录页。请先复制或下载反馈内容，再通过可用的
-                网络环境、官方发布帖或玩家群提交。
-              </p>
-            </div>
-          ) : null}
-        </Sheet>
-      </Reveal>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.15fr_1fr]">
         <Reveal>
@@ -507,9 +231,95 @@ export function Feedback() {
               </a>
             </div>
 
-            <p className="mt-4 text-[0.8rem] text-ink-faint">
-              提交需要 GitHub 账号。无法注册账号时，也可通过官方发布帖或玩家群反馈。
-            </p>
+            {FEEDBACK_RELAY_URL ? (
+              <div className="mt-4 border-t border-dashed border-line pt-4">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                  <h4 className="text-[0.92rem] font-semibold text-ink">经中继直接提交</h4>
+                  <span className="text-[0.82rem] text-ink-soft">
+                    {relayHealth === 'checking' ? '正在检测中继…' : null}
+                    {relayHealth === 'ok' ? `中继可用（${relayLatency} ms）` : null}
+                    {relayHealth === 'fail' ? '中继不可用，请用上方的 GitHub 表单提交。' : null}
+                    {relayHealth === 'idle' ? '尚未检测中继。' : null}
+                  </span>
+                </div>
+                <p className="mt-2 text-[0.85rem] leading-relaxed text-ink-soft">
+                  提交后由维护者的中继调用 GitHub API 建 issue，浏览器不需要能打开 github.com。
+                  令牌只保存在中继上。标题由问题类型、涉及模块与下面这句概述拼成。
+                </p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-[1.6fr_1fr]">
+                  <label className="text-[0.84rem] text-ink-soft">
+                    问题概述（会写进标题）
+                    <input
+                      type="text"
+                      value={summary}
+                      maxLength={120}
+                      onChange={(event) => setSummary(event.target.value)}
+                      placeholder="例如：伙伴在工作时不会拾取掉落物"
+                      className="mt-1 w-full rounded-md border border-line bg-paper-sunk/50 px-3 py-2 text-[0.88rem] text-ink"
+                    />
+                  </label>
+                  <label className="text-[0.84rem] text-ink-soft">
+                    联系方式（可选，方便追问）
+                    <input
+                      type="text"
+                      value={contact}
+                      maxLength={120}
+                      onChange={(event) => setContact(event.target.value)}
+                      placeholder="QQ / 邮箱 / 论坛 ID"
+                      className="mt-1 w-full rounded-md border border-line bg-paper-sunk/50 px-3 py-2 text-[0.88rem] text-ink"
+                    />
+                  </label>
+                </div>
+                {/* 蜜罐：正常用户看不见，只有脚本会填 */}
+                <input
+                  type="text"
+                  value={honeypot}
+                  onChange={(event) => setHoneypot(event.target.value)}
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                  className="hidden"
+                />
+                <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-2 text-[0.86rem]">
+                  <button
+                    type="button"
+                    disabled={submitBusy || summary.trim().length < 4 || relayHealth !== 'ok'}
+                    onClick={() => void submitByRelay()}
+                    className="rounded-md border border-seal px-4 py-2 text-seal transition-colors hover:bg-paper-sunk disabled:cursor-not-allowed disabled:border-line disabled:text-ink-faint"
+                  >
+                    {submitBusy ? '正在提交…' : '直接提交到 issue 区'}
+                  </button>
+                  {submitState === 'ok' && issueUrl ? (
+                    <span role="status" aria-live="polite">
+                      已创建：
+                      <a href={issueUrl} target="_blank" rel="noreferrer noopener" className="link-quiet ml-1">
+                        {issueUrl.replace('https://github.com/', '')}
+                      </a>
+                    </span>
+                  ) : null}
+                  {submitState === 'error' ? (
+                    <span role="status" aria-live="polite" className="text-seal">
+                      提交失败：{submitMessage}
+                    </span>
+                  ) : null}
+                  {submitState !== 'ok' && relayHealth === 'fail' ? (
+                    <span className="text-ink-faint">中继探测未通过，按钮已停用；请用上方的 GitHub 表单提交。</span>
+                  ) : null}
+                  {submitState === 'idle' && relayHealth === 'ok' && summary.trim().length < 4 ? (
+                    <span className="text-ink-faint">填写问题概述后即可提交。</span>
+                  ) : null}
+                  {relayHealth === 'checking' ? (
+                    <span className="text-ink-faint">正在探测中继…</span>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+
+            {FEEDBACK_RELAY_URL ? null : (
+              <p className="mt-4 text-[0.8rem] text-ink-faint">
+                提交需要 GitHub 账号。无法注册账号时，也可通过官方发布帖或玩家群反馈。
+              </p>
+            )}
           </Sheet>
         </Reveal>
 
@@ -591,6 +401,25 @@ export function Feedback() {
                     本仓库首页
                   </a>
                 </li>
+                {FALLBACK_FEEDBACK_URL ? (
+                  <li>
+                    <a
+                      href={FALLBACK_FEEDBACK_URL}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="link-quiet inline-block py-1 text-ink-soft"
+                    >
+                      {FALLBACK_FEEDBACK_LABEL}
+                    </a>
+                  </li>
+                ) : null}
+                {SITE_MIRROR_URL ? (
+                  <li>
+                    <a href={SITE_MIRROR_URL} className="link-quiet inline-block py-1 text-ink-soft">
+                      本站国内镜像
+                    </a>
+                  </li>
+                ) : null}
               </ul>
             </Sheet>
           </Reveal>

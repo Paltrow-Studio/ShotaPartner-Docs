@@ -13,32 +13,10 @@ export const SITE_URL = 'https://paltrow-studio.github.io/ShotaPartner-Docs/'
 export const ORG_URL = `https://github.com/${ORG}`
 
 /**
- * GitHub 文件加速节点。
- *
- * 实测结论（2026-09-30，逐节点发起真实请求）：
- *   - 对 `raw.githubusercontent.com`、`archive/refs/heads/*.zip`、`releases/download`
- *     一类**资源路径**返回 200，且带 `access-control-allow-origin: *`，
- *     因此页面可以在浏览器里校验内容并测速；
- *   - 对 `github.com/...` 的 **HTML 页面**（仓库页、issue 页、discussions）
- *     一律返回 403 / 404 或自己的错误页，无法用于浏览与提交。
- *
- * 列表只保留对资源路径实测可用的节点；ghproxy.net 已跳转到垃圾站点，故移除。
- * 页面会按访客自己的网络实测延迟，自动选择最快的可用节点。
+ * GitHub 加速节点的实测结论保存在 README「国内网络下的访问与反馈」一节：
+ * 这些节点只转发 raw / archive / release，HTML 页面（仓库页、issue 页、登录页）
+ * 一律 403 / 404，因此提交只能走下面的中继。页面不再做线路测速。
  */
-export const GITHUB_MIRRORS: { id: string; label: string; prefix: string }[] = [
-  { id: 'gh-proxy', label: 'gh-proxy.com', prefix: 'https://gh-proxy.com/' },
-  { id: 'ghfast', label: 'ghfast.top', prefix: 'https://ghfast.top/' },
-  { id: 'llkk', label: 'gh.llkk.cc', prefix: 'https://gh.llkk.cc/' },
-  { id: 'jasonzeng', label: 'gh.jasonzeng.dev', prefix: 'https://gh.jasonzeng.dev/' },
-]
-
-/** 用于测速与校验的公开资源：本仓库自身的 favicon（体积小、内容可判定） */
-export const MIRROR_PROBE_RAW =
-  `https://raw.githubusercontent.com/${ORG}/${REPO}/main/public/favicon.svg`
-
-/** 可经加速节点获取的资源（本仓库为公开仓库，这两条在国内通常可用） */
-export const REPO_ARCHIVE = `${GITHUB_REPO}/archive/refs/heads/main.zip`
-export const REPO_README_RAW = `https://raw.githubusercontent.com/${ORG}/${REPO}/main/README.md`
 
 /**
  * 国内备用反馈渠道（问卷、表单等），留空则页面不显示该入口。

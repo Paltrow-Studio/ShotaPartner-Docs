@@ -57,8 +57,6 @@ src/
 ├─ index.css              # 两套主题的语义色板、纸面质感、组件类、无障碍与动效偏好
 ├─ lib/                  # 站点运行时逻辑
 │  ├─ theme.ts           # 日间/夜间主题状态（首屏防闪由 index.html 内联脚本完成）
-│  ├─ reach.ts           # github.com 连通性探测
-│  ├─ accelerator.ts     # 加速节点实测与自动选用
 │  └─ relay.ts           # 反馈中继客户端（未配置地址时不发请求）
 ├─ components/
 │  ├─ Nav / Hero / Contents / Roster / Reference / Install / Faq / Feedback / Footer
@@ -92,7 +90,7 @@ relay/
 | 导航、首屏文案 | `src/data/site.ts` |
 | 常见问题 | `src/data/faq.ts` |
 | 反馈类型 / 模块选项 / 预填逻辑 | `src/data/feedback.ts` |
-| 加速节点名单、中继地址 | `src/data/site.ts`（`GITHUB_MIRRORS` / `FEEDBACK_RELAY_URL`） |
+| 反馈中继地址、国内备用入口 | `src/data/site.ts`（`FEEDBACK_RELAY_URL` / `FALLBACK_FEEDBACK_URL` / `SITE_MIRROR_URL`） |
 | 反馈中继服务 | `relay/`（部署与安全说明见 `relay/README.md`） |
 | 配色、纸面质感、字体 | `src/index.css`（`:root` 与 `[data-theme='dark']` 两套变量） |
 | 站点图标 / 分享图 | `scripts/make-icons.py` 重新生成，见下节 |
@@ -148,11 +146,10 @@ npm run check:content   # 单独跑；命中即退出码 1
 
 ## 国内网络下的访问与反馈
 
-GitHub 在国内经常无法直接访问，这一点没有办法靠前端绕过，因此页面做了三件事：
+GitHub 在国内经常无法直接访问，这一点没有办法靠前端绕过。反馈区不再做连接探测与线路测速，直接进入问题类型与模块选择；国内提交依赖下面两条可选路径：
 
-1. **检测与说明**：反馈区进入视口后会用 6 秒超时探测 `github.com`；连不上时明确写出「issue 表单需要在 github.com 登录后填写，资源加速节点无法承载表单与登录页」，而不是让用户点开一个打不开的链接。
-2. **资源线路自动测试**：同一时刻逐个实测「直连 + 各加速节点」（下载本仓库的 `public/favicon.svg`，校验正文含 `<svg>` 并计时，单节点 8 秒超时），按可用性与耗时排序后**自动选用最快的一条**来渲染「下载本站源码 zip」与「查看 README」两个资源链接，并在页面上列出每个节点的实测结果。这些节点对 raw 路径返回 `access-control-allow-origin: *`，所以浏览器能读到状态码与正文，测试结果是真下载而不是探测包。
-3. **不依赖 GitHub 的反馈内容生成**：反馈区把「标题 + 标签 + 与表单字段一一对应的正文框架」生成好，可一键复制或下载为 `.md` 文件（文件名形如 `伙伴物语-反馈-crash-2026-09-30.md`）。用户可以在任何能访问 GitHub 的环境里粘进表单，也可以直接把文件发给维护者。
+1. **中继提交**：部署 `relay/` 并在 `FEEDBACK_RELAY_URL` 填入地址后，反馈区第「三」步会出现「直接提交到 issue 区」——由中继持服务端令牌建 issue，玩家不需要能打开 github.com。地址留空时该区块不出现，页面也不发出任何中继请求。
+2. **零后端备选**：在 Gitee 建一个反馈仓并把地址填进 `FALLBACK_FEEDBACK_URL`，入口显示在反馈区右侧「直达链接」卡片；国内可直达，但反馈落在 Gitee 而非 GitHub issue。
 
 ### 实测结论（2026-09-30）
 
@@ -166,7 +163,7 @@ GitHub 在国内经常无法直接访问，这一点没有办法靠前端绕过�
 | ghproxy.net | **302 跳转到 survey-smiles.com（垃圾站点）** | 200 | 200 |
 | bgithub.xyz / kkgithub.com / hub.whtrys.space / github.moeyy.xyz | 403 或不可达 | — | — |
 
-因此**没有任何国内节点可以承载 issue 表单与登录流程**：它们只转发文件路径，HTML 页面一律 403/404，而 `issues/new` 本身需要 GitHub 会话。`ghproxy.net` 已跳转垃圾站点，已从 `GITHUB_MIRRORS` 中移除。
+因此**没有任何国内节点可以承载 issue 表单与登录流程**：它们只转发文件路径，HTML 页面一律 403/404，而 `issues/new` 本身需要 GitHub 会话。`ghproxy.net` 已跳转垃圾站点，不再列入任何名单。
 
 ### 反馈中继（可选，唯一能在国内直接建 issue 的路径）
 
@@ -182,11 +179,10 @@ node relay/selftest.mjs   # 11 项：校验、标签映射、蜜罐、来源白�
 
 ### 相关配置（`src/data/site.ts`）
 
+页面已不再做节点测速：以下常量决定反馈区的入口。
+
 | 常量 | 作用 |
 | --- | --- |
-| `GITHUB_MIRRORS` | 参与自动测试的加速节点（`id` / `label` / `prefix`），可自行增删 |
-| `MIRROR_PROBE_RAW` | 测速与校验用的公开文件，换仓库时同步修改 |
-| `REPO_ARCHIVE` / `REPO_README_RAW` | 会被套上选定节点的资源链接 |
 | `FEEDBACK_RELAY_URL` | 反馈中继地址；**留空则不显示「直接提交」按钮，且不发出任何中继请求** |
 | `FALLBACK_FEEDBACK_URL` / `FALLBACK_FEEDBACK_LABEL` | 国内备用反馈渠道（问卷、表单、Gitee 仓等）；**留空则不显示该入口** |
 | `SITE_MIRROR_URL` | 本站的国内镜像地址（例如另建的 Gitee Pages / Cloudflare Pages）；留空则不显示 |
