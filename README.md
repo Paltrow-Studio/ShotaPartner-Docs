@@ -66,8 +66,8 @@ src/
 │  └─ paper.tsx           # 纸面基础件：行内标记解析、Sheet、章节标题、批注
 └─ data/                  # ★ 所有文案与内容都在这里，改内容基本只动这层
    ├─ site.ts             # 站点常量与导航（含加速节点、中继地址）
-   ├─ guide.ts            # 玩法章节（11 章，正文主体）
-   ├─ roster.ts           # 27 位伙伴的名册与六项初始训练值
+   ├─ guide.ts            # 玩法章节（10 章，正文主体）
+   ├─ roster.ts           # 26 位可获得伙伴的名册与六项初始训练值
    ├─ reference.ts        # 按键、命令、物品、方块、状态效果
    ├─ modules.ts          # 三个 jar 的版本与前置
    ├─ faq.ts              # 常见问题
@@ -96,6 +96,7 @@ relay/
 | 反馈中继服务 | `relay/`（部署与安全说明见 `relay/README.md`） |
 | 配色、纸面质感、字体 | `src/index.css`（`:root` 与 `[data-theme='dark']` 两套变量） |
 | 站点图标 / 分享图 | `scripts/make-icons.py` 重新生成，见下节 |
+| 内容门禁（禁止收录的角色与内容） | `scripts/check-content.mjs`，见「内容门禁」一节 |
 
 `guide.ts` 里每章由若干内容块组成，可用的 `kind`：
 `p`（段落，支持 `` `代码` ``、`**加粗**`、`[文字](链接)`）、`sub`（小标题）、`list`、`steps`、`keys`、`table`、`note`（批注）。
@@ -130,6 +131,20 @@ python3 scripts/make-icons.py --check  # 只校验尺寸与不透明度
    玩法说明与问题反馈」与版本信息，右下角站点地址。
 
 需要换 logo 时：替换 `assets/brand/` 下的源图，跑一次脚本并 `npm run build` 即可，文件清单无需改动。
+
+## 内容门禁
+
+
+这条规则由 `scripts/check-content.mjs` 强制执行，并已接入 `npm run build`：
+
+```bash
+npm run check:content   # 单独跑；命中即退出码 1
+```
+
+- 扫描范围：**`src/`（源文案与数据）与 `dist/`（实际发布产物）两处**。发布产物是最终保证——内容只要进了包就会被拦下。
+- 因为挂在 `build` 上，GitHub Pages 的 CI 同样会执行：往页面里加回相关内容会直接构建失败。
+
+本节是本仓库的维护说明，页面本身从不出现这些内容。
 
 ## 国内网络下的访问与反馈
 

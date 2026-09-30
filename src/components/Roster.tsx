@@ -1,14 +1,15 @@
+import { focusOf, partners, statLabels, statRatio } from '../data/roster'
 import { Sheet } from './paper'
 import { Reveal } from './Reveal'
 
-/** 27 位伙伴的名册：六项初始训练值 + 一句定位 */
+/** 可获得伙伴的名册：六项初始训练值 + 一句定位 */
 export function Roster() {
   return (
     <section id="roster" className="scroll-mt-24">
       <Reveal>
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h3 className="font-serif text-[1.1rem] font-semibold text-ink">
-            名册：27 位角色
+            名册：{partners.length} 位角色
           </h3>
           <p className="text-[0.82rem] text-ink-faint">
             数值是每位角色的初始训练值，六项总和都在 161~185 之间
@@ -61,8 +62,8 @@ export function Roster() {
 
       <Reveal className="mt-4">
         <p className="text-[0.82rem] leading-relaxed text-ink-faint">
-          显示用的四项基础数值（生命 20、攻击 2、防御 2、速度 0.25）在 27 位角色上完全一致，
-          实际差异体现在下表六项，每项上限 150。「看守者」表示该角色另有挂机刷新的野生入口；
+          显示用的四项基础数值（生命 20、攻击 2、防御 2、速度 0.25）在全部 {partners.length} 位角色上完全一致，
+          实际差异体现在下表六项，每项上限 150。「看守者」表示该角色另有挂机刷新的野生入口。
         </p>
       </Reveal>
     </section>

@@ -73,9 +73,6 @@ export const chapters: Chapter[] = [
       {
         kind: 'p',
       },
-      {
-        kind: 'note',
-      },
     ],
   },
   {
@@ -397,36 +394,8 @@ export const chapters: Chapter[] = [
     ],
   },
   {
-    id: 'mount',
-    mark: '七',
-    blocks: [
-      {
-        kind: 'p',
-      },
-      {
-        kind: 'table',
-        head: ['', '白天', '夜间'],
-        rows: [
-          ['火焰伤害', '4.0', '8.0'],
-          ['目标着火时间', '3 秒', '5 秒'],
-        ],
-      },
-      {
-        kind: 'list',
-        items: [
-          '喷火射程 10 格，追击时放宽至 15 格；冷却 3 秒，火球存在时间 5 秒。',
-          '仅在受到攻击后进行反击，不主动索敌。',
-          '火焰是否点燃方块、破坏地形取决于 `mobGriefing` 规则；该规则关闭时既不点火也不改变地形。',
-        ],
-      },
-      {
-        kind: 'note',
-      },
-    ],
-  },
-  {
     id: 'death',
-    mark: '八',
+    mark: '七',
     title: '阵亡与复活',
     lede: '阵亡后留下墓碑；复活分为墓碑与水中仪式两条途径。',
     blocks: [
@@ -473,7 +442,7 @@ export const chapters: Chapter[] = [
   },
   {
     id: 'breeding',
-    mark: '九',
+    mark: '八',
     blocks: [
       {
         kind: 'p',
@@ -499,7 +468,7 @@ export const chapters: Chapter[] = [
   },
   {
     id: 'school',
-    mark: '十',
+    mark: '九',
     title: '学校',
     lede: '安装学校追加包后，可自行搭建传送门进入学校维度，其中共有十二位学生。',
     blocks: [
@@ -578,7 +547,7 @@ export const chapters: Chapter[] = [
   },
   {
     id: 'compat',
-    mark: '十一',
+    mark: '十',
     title: '联动与兼容',
     lede: '枪械、手册、僵尸皮肤与玩家动画均为可选联动，不安装也不影响模组正常运行。',
     blocks: [

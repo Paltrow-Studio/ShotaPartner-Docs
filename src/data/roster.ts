@@ -1,10 +1,12 @@
 /**
- * 27 位伙伴的名册与初始训练值。
+ * 可获得伙伴的名册与初始训练值。
  *
  * 数据来源：ShotaPartner-Core 的 partner/character/CharacterProfiles.java（角色 id 与中文名）
  * 与 PartnerInitialStatsTable.java（六项初始训练值）。显示用的四项基础数值
- * （生命 20 / 攻击 2 / 防御 2 / 速度 0.25）在 27 位角色上完全相同，
+ * （生命 20 / 攻击 2 / 防御 2 / 速度 0.25）在全部角色上完全相同，
  * 实际差异体现在下列六项训练值，表格仅列出这六项。
+ *
+ * 名册、问答、正文与元信息都不出现，由 scripts/check-content.mjs 在构建时校验。
  */
 
 export type StatKey = 'attack' | 'defense' | 'health' | 'work' | 'haste' | 'proficiency'
@@ -63,7 +65,6 @@ export const partners: Partner[] = [
   { id: 'xiaoluo', name: '小洛', stats: [30, 27, 45, 17, 30, 24] },
   { id: 'songshu', name: '怂鼠', stats: [21, 26, 41, 25, 29, 23] },
 ]
-
 
 /** 把某项数值换算成 0~1 的相对高度 */
 export function statRatio(key: StatKey, value: number): number {
