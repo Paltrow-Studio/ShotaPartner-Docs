@@ -9,277 +9,212 @@ import {
 } from '../data/feedback'
 import { DISCUSSIONS, GITHUB_REPO, ISSUES } from '../data/site'
 import type { ModuleId } from '../data/modules'
-import { Icon } from './Icons'
+import { Sheet } from './paper'
 import { Reveal } from './Reveal'
-import { Section, SectionHeading } from './Section'
 
-/**
- * 公开问题反馈区。
- * 纯静态站点没有后端 token，因此走 GitHub 官方的 issue 表单深链：
- * 页面负责把「问题类型 + 涉及模块」翻译成预填好的标题与标签，玩家在 GitHub 完成提交。
- */
 export function Feedback() {
   const [typeId, setTypeId] = useState<IssueTypeId>('bug')
   const [moduleId, setModuleId] = useState<ModuleId | 'unknown'>('core')
   const [copied, setCopied] = useState(false)
 
   const type = useMemo(() => issueTypes.find((t) => t.id === typeId)!, [typeId])
-  const option = useMemo(
-    () => moduleOptions.find((m) => m.id === moduleId) ?? moduleOptions[3],
-    [moduleId],
-  )
+  const option = useMemo(() => moduleOptions.find((m) => m.id === moduleId) ?? moduleOptions[3], [moduleId])
   const url = useMemo(() => buildIssueUrl(type, moduleId), [type, moduleId])
-  const previewTitle = `${type.titlePrefix} [${option.titleTag}] …`
   const searchUrl = `${ISSUES}?q=${encodeURIComponent(
-    `is:issue ${option.titleTag === '未确定' ? '' : option.titleTag} ${type.name}`.trim(),
+    `is:issue ${option.titleTag === '未确定' ? '' : option.titleTag}`.trim(),
   )}`
 
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url)
       setCopied(true)
-      window.setTimeout(() => setCopied(false), 2200)
+      window.setTimeout(() => setCopied(false), 2000)
     } catch {
       setCopied(false)
     }
   }
 
   return (
-    <Section id="feedback" className="border-t border-white/6">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute left-1/2 top-10 h-[26rem] w-[46rem] -translate-x-1/2 rounded-full bg-violet-600/12 blur-[140px]" />
+    <section id="feedback" className="mx-auto w-full max-w-6xl scroll-mt-24 px-5 pt-16 sm:px-6">
+      <div className="flex items-center gap-3">
+        <span className="chapter-mark">反馈</span>
+        <span className="h-px flex-1 bg-line" />
       </div>
+      <h2 className="mt-3 text-2xl sm:text-[1.7rem]">遇到问题，在这里提</h2>
+      <p className="mt-2 max-w-3xl text-[0.95rem] text-ink-soft">
+        三个模组仓库没有公开，所以玩家的反馈都提到这一页所在的仓库里，issue 区对所有人可见。
+        下面选一下问题类型和涉及的模块，标题与标签会帮你填好，剩下在 GitHub 上提交即可。
+      </p>
 
-      <SectionHeading
-        eyebrow="Feedback"
-        title={
-          <>
-            公开的<span className="gradient-text">问题反馈区</span>
-          </>
-        }
-        desc="三个模块仓库目前没有公开，所以玩家的反馈统一提交到本仓库的 issue 区 —— 它对所有人开放。下面的三步会帮你把问题类型和涉及模块预填进表单，提交后维护者能直接分流。"
-      />
-
-      <div className="mt-12 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-        {/* 交互构建器 */}
+      <div className="mt-8 grid gap-8 lg:grid-cols-[1.15fr_1fr]">
         <Reveal>
-          <div className="card p-6 sm:p-7">
-            {/* 步骤 1 */}
-            <div className="flex items-center gap-3">
-              <span className="chip-mono flex h-6 w-6 items-center justify-center rounded-lg bg-white/8 text-xs text-slate-300">
-                1
-              </span>
-              <h3 className="text-sm font-semibold text-white">你想反馈什么？</h3>
-            </div>
-            <div className="mt-4 grid auto-rows-fr gap-3 sm:grid-cols-2">
+          <Sheet className="p-5 sm:p-6">
+            <p className="chapter-mark">一</p>
+            <h3 className="mt-1 text-[1rem] font-semibold text-ink">问题是哪一类</h3>
+            <ul className="mt-3 divide-y divide-dashed divide-line border-y border-dashed border-line">
               {issueTypes.map((item) => {
                 const selected = item.id === typeId
                 return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setTypeId(item.id)}
-                    aria-pressed={selected}
-                    className={`card card-hover flex h-full flex-col items-start gap-2 p-4 text-left transition-colors ${
-                      selected ? `${item.accent.border} ${item.accent.bg}` : 'border-white/8'
-                    }`}
-                  >
-                    <span className="flex w-full items-start justify-between gap-2">
-                      <span className={`flex items-center gap-2 text-sm font-semibold ${selected ? 'text-white' : 'text-slate-200'}`}>
-                        <Icon name={item.icon} className={`h-4 w-4 ${item.accent.text}`} />
-                        {item.name}
+                  <li key={item.id}>
+                    <label
+                      className={`flex cursor-pointer items-start gap-3 py-3 transition-colors ${
+                        selected ? 'text-ink' : 'text-ink-soft'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="issue-type"
+                        value={item.id}
+                        checked={selected}
+                        onChange={() => setTypeId(item.id)}
+                        className="mt-[0.55em] h-3.5 w-3.5 shrink-0 accent-[var(--c-seal)]"
+                      />
+                      <span>
+                        <span className="flex flex-wrap items-baseline gap-2">
+                          <span className="text-[0.95rem] font-medium">{item.name}</span>
+                          <span className="num text-ink-faint">{item.when}</span>
+                        </span>
+                        <span className="mt-0.5 block text-[0.86rem] leading-relaxed text-ink-soft">
+                          {item.desc}
+                        </span>
                       </span>
-                      <span
-                        className={`mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
-                          selected ? 'border-transparent bg-gradient-to-br from-violet-500 to-cyan-500' : 'border-white/25'
-                        }`}
-                      >
-                        {selected ? <Icon name="check" className="h-2.5 w-2.5 text-white" strokeWidth={3} /> : null}
-                      </span>
-                    </span>
-                    <span className="text-xs leading-relaxed text-slate-400">{item.desc}</span>
-                    <span className={`chip-mono mt-auto pt-2 text-[0.68rem] ${item.accent.text}`}>
-                      {item.when}
-                    </span>
-                  </button>
+                    </label>
+                  </li>
                 )
               })}
+            </ul>
+
+            <p className="chapter-mark mt-7">二</p>
+            <h3 className="mt-1 text-[1rem] font-semibold text-ink">出在哪个部分</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {moduleOptions.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setModuleId(item.id)}
+                  aria-pressed={item.id === moduleId}
+                  className={`rounded-md border px-3 py-1.5 text-[0.85rem] transition-colors ${
+                    item.id === moduleId
+                      ? 'border-seal bg-paper-sunk text-seal'
+                      : 'border-line text-ink-soft hover:border-line-strong hover:text-ink'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
 
-            {/* 步骤 2 */}
-            <div className="mt-8 flex items-center gap-3">
-              <span className="chip-mono flex h-6 w-6 items-center justify-center rounded-lg bg-white/8 text-xs text-slate-300">
-                2
-              </span>
-              <h3 className="text-sm font-semibold text-white">涉及哪个模块？</h3>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {moduleOptions.map((item) => {
-                const selected = item.id === moduleId
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setModuleId(item.id)}
-                    aria-pressed={selected}
-                    className={`rounded-full px-4 py-2 text-xs font-medium transition-colors ${
-                      selected
-                        ? 'bg-white/12 text-white'
-                        : 'border border-white/12 text-slate-400 hover:border-white/28 hover:text-slate-100'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* 步骤 3 */}
-            <div className="mt-8 flex items-center gap-3">
-              <span className="chip-mono flex h-6 w-6 items-center justify-center rounded-lg bg-white/8 text-xs text-slate-300">
-                3
-              </span>
-              <h3 className="text-sm font-semibold text-white">确认并打开表单</h3>
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4">
-              <dl className="space-y-2.5 text-xs">
-                <div className="flex flex-wrap items-center gap-2">
-                  <dt className="chip-mono w-20 shrink-0 text-slate-400">表单模板</dt>
-                  <dd className="chip-mono text-slate-200">{type.template}</dd>
+            <p className="chapter-mark mt-7">三</p>
+            <h3 className="mt-1 text-[1rem] font-semibold text-ink">打开表单</h3>
+            <div className="mt-3 rounded-md border border-dashed border-line bg-paper-sunk/60 p-4">
+              <dl className="space-y-2 text-[0.85rem]">
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <dt className="num w-20 shrink-0 text-ink-faint">模板</dt>
+                  <dd>
+                    <code>{type.template}</code>
+                  </dd>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <dt className="chip-mono w-20 shrink-0 text-slate-400">预填标题</dt>
-                  <dd className="chip-mono text-slate-200">{previewTitle}</dd>
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <dt className="num w-20 shrink-0 text-ink-faint">标题</dt>
+                  <dd>
+                    <code>{`${type.titlePrefix} [${option.titleTag}] …`}</code>
+                  </dd>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <dt className="chip-mono w-20 shrink-0 text-slate-400">自动标签</dt>
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <dt className="num w-20 shrink-0 text-ink-faint">标签</dt>
                   <dd className="flex flex-wrap gap-1.5">
                     {type.labels.split(',').map((label) => (
-                      <span
-                        key={label}
-                        className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[0.68rem] text-slate-300"
-                      >
+                      <span key={label} className="tag">
                         {label}
                       </span>
                     ))}
                   </dd>
                 </div>
               </dl>
-              <p className="mt-3 border-t border-white/8 pt-3 text-[0.72rem] leading-relaxed text-slate-400">
-                打开表单后请把「涉及模块」选为「{option.formOption}」。表单的必填项会提示你补齐版本、日志与复现步骤。
+              <p className="mt-3 border-t border-dashed border-line pt-3 text-[0.82rem] text-ink-faint">
+                打开表单后，把「涉及模块」这一项选成「{option.formOption}」，其余必填项按提示补齐。
               </p>
             </div>
 
-            <div className="mt-5 flex flex-wrap items-center gap-3">
+            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3 text-[0.88rem]">
               <a
                 href={url}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-950/40 transition-transform hover:-translate-y-0.5"
+                className="rounded-md border border-seal px-4 py-2 text-seal transition-colors hover:bg-paper-sunk"
               >
-                <Icon name="github" className="h-4 w-4" />
-                在 GitHub 打开表单
-                <Icon name="arrowRight" className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                在 GitHub 打开表单 →
               </a>
-              <button
-                type="button"
-                onClick={copy}
-                className="inline-flex items-center gap-2 rounded-full border border-white/12 px-4 py-2.5 text-xs font-medium text-slate-300 transition-colors hover:border-white/28 hover:text-white"
-              >
-                <Icon name={copied ? 'check' : 'scroll'} className="h-3.5 w-3.5" />
+              <button type="button" onClick={copy} className="link-quiet text-ink-soft">
                 {copied ? '已复制链接' : '复制表单链接'}
               </button>
               <a
                 href={searchUrl}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="inline-flex items-center gap-2 rounded-full border border-white/12 px-4 py-2.5 text-xs font-medium text-slate-300 transition-colors hover:border-white/28 hover:text-white"
+                className="link-quiet text-ink-soft"
               >
-                <Icon name="list" className="h-3.5 w-3.5" />
-                先搜索同类 issue
+                先搜同类 issue
               </a>
             </div>
 
-            <p className="mt-4 text-[0.72rem] leading-relaxed text-slate-400">
-              提交需要 GitHub 账号；issue 是公开的，所有人都能查看与跟进。若你不方便注册账号，也可以在官方发布帖或玩家群里反馈。
+            <p className="mt-4 text-[0.8rem] text-ink-faint">
+              提交需要 GitHub 账号。不方便注册的话，也可以在官方发布帖或玩家群里反馈。
             </p>
-          </div>
+          </Sheet>
         </Reveal>
 
-        {/* 右侧：提交清单 + 注意事项 */}
         <div className="space-y-6">
           <Reveal delay={60}>
-            <div className="card p-6 sm:p-7">
-              <h3 className="flex items-center gap-2.5 text-sm font-semibold text-white">
-                <Icon name="package" className="h-4.5 w-4.5 text-violet-300" />
-                提交前请准备好
-              </h3>
-              <ul className="mt-5 space-y-4">
-                {reportChecklist.map((item) => (
-                  <li key={item.title} className="flex gap-3.5">
-                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/6 text-slate-300">
-                      <Icon name={item.icon} className="h-4 w-4" />
-                    </span>
+            <Sheet className="p-5 sm:p-6">
+              <h3 className="text-[1rem] font-semibold text-ink">提之前先准备</h3>
+              <ol className="mt-3 space-y-3">
+                {reportChecklist.map((item, index) => (
+                  <li key={item.title} className="flex gap-3 text-[0.88rem]">
+                    <span className="num mt-[0.15em] text-seal">{String(index + 1).padStart(2, '0')}</span>
                     <span>
-                      <span className="block text-sm font-medium text-slate-100">{item.title}</span>
-                      <span className="mt-1 block text-xs leading-relaxed text-slate-400">{item.desc}</span>
+                      <span className="block text-ink">{item.title}</span>
+                      <span className="mt-0.5 block leading-relaxed text-ink-soft">{item.desc}</span>
                     </span>
                   </li>
                 ))}
-              </ul>
-            </div>
+              </ol>
+            </Sheet>
           </Reveal>
 
           <Reveal delay={110}>
-            <div className="card border-rose-400/20 bg-rose-500/6 p-6 sm:p-7">
-              <h3 className="flex items-center gap-2.5 text-sm font-semibold text-white">
-                <Icon name="alert" className="h-4.5 w-4.5 text-rose-300" />
-                请不要这样做
-              </h3>
-              <ul className="mt-4 space-y-2.5">
+            <Sheet className="p-5 sm:p-6">
+              <h3 className="text-[1rem] font-semibold text-ink">这几种情况会被直接关掉</h3>
+              <ul className="mt-3 space-y-2">
                 {reportAntiPatterns.map((item) => (
-                  <li key={item} className="flex gap-2.5 text-xs leading-relaxed text-slate-300">
-                    <Icon name="close" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-300" strokeWidth={2.4} />
+                  <li key={item} className="flex gap-2.5 text-[0.88rem] leading-relaxed text-ink-soft">
+                    <span className="text-seal">×</span>
                     <span>{item}</span>
                   </li>
                 ))}
               </ul>
-            </div>
+            </Sheet>
           </Reveal>
 
-          <Reveal delay={160}>
-            <div className="card p-6">
-              <h3 className="text-sm font-semibold text-white">直达链接</h3>
-              <ul className="mt-4 space-y-2.5">
+          <Reveal delay={150}>
+            <Sheet className="p-5 sm:p-6">
+              <h3 className="text-[1rem] font-semibold text-ink">直达</h3>
+              <ul className="mt-3 space-y-1.5 text-[0.88rem]">
                 {issueTypes.map((item) => (
                   <li key={item.id}>
                     <a
                       href={buildIssueUrl(item, moduleId)}
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="link-underline flex items-center justify-between gap-3 py-1 text-xs text-slate-300 hover:text-white"
+                      className="link-quiet inline-block py-0.5 text-ink-soft"
                     >
-                      <span className="flex items-center gap-2">
-                        <Icon name={item.icon} className={`h-3.5 w-3.5 ${item.accent.text}`} />
-                        {item.name}
-                      </span>
-                      <Icon name="external" className="h-3.5 w-3.5 text-slate-400" />
+                      {item.name}
                     </a>
                   </li>
                 ))}
-                <li className="pt-1.5">
-                  <a
-                    href={ISSUES}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="link-underline flex items-center justify-between gap-3 py-1 text-xs text-slate-300 hover:text-white"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Icon name="list" className="h-3.5 w-3.5 text-slate-400" />
-                      浏览全部 issue
-                    </span>
-                    <Icon name="external" className="h-3.5 w-3.5 text-slate-400" />
+                <li className="pt-1">
+                  <a href={ISSUES} target="_blank" rel="noreferrer noopener" className="link-quiet text-ink-soft">
+                    浏览全部 issue
                   </a>
                 </li>
                 <li>
@@ -287,13 +222,9 @@ export function Feedback() {
                     href={DISCUSSIONS}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="link-underline flex items-center justify-between gap-3 py-1 text-xs text-slate-300 hover:text-white"
+                    className="link-quiet text-ink-soft"
                   >
-                    <span className="flex items-center gap-2">
-                      <Icon name="users" className="h-3.5 w-3.5 text-slate-400" />
-                      讨论区（提问 / 交流）
-                    </span>
-                    <Icon name="external" className="h-3.5 w-3.5 text-slate-400" />
+                    讨论区（提问、闲聊）
                   </a>
                 </li>
                 <li>
@@ -301,20 +232,16 @@ export function Feedback() {
                     href={GITHUB_REPO}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="link-underline flex items-center justify-between gap-3 py-1 text-xs text-slate-300 hover:text-white"
+                    className="link-quiet text-ink-soft"
                   >
-                    <span className="flex items-center gap-2">
-                      <Icon name="github" className="h-3.5 w-3.5 text-slate-400" />
-                      本仓库首页
-                    </span>
-                    <Icon name="external" className="h-3.5 w-3.5 text-slate-400" />
+                    本仓库首页
                   </a>
                 </li>
               </ul>
-            </div>
+            </Sheet>
           </Reveal>
         </div>
       </div>
-    </Section>
+    </section>
   )
 }

@@ -1,21 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Icon, LogoMark } from './Icons'
-import { GITHUB_REPO, navItems } from '../data/site'
+import { navItems, ORG, REPO } from '../data/site'
+import { useTheme } from '../lib/theme'
 
-/** 顶部导航：滚动后加毛玻璃底、自动高亮当前分区、移动端折叠菜单、顶部进度条 */
+const GITHUB = `https://github.com/${ORG}/${REPO}`
+
 export function Nav() {
+  const { theme, setTheme } = useTheme()
   const [scrolled, setScrolled] = useState(false)
-  const [progress, setProgress] = useState(0)
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(navItems[0].id)
 
   useEffect(() => {
-    const onScroll = () => {
-      const top = window.scrollY
-      setScrolled(top > 16)
-      const height = document.documentElement.scrollHeight - window.innerHeight
-      setProgress(height > 0 ? Math.min(1, Math.max(0, top / height)) : 0)
-    }
+    const onScroll = () => setScrolled(window.scrollY > 12)
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
@@ -26,17 +22,16 @@ export function Nav() {
       .map((item) => document.getElementById(item.id))
       .filter((el): el is HTMLElement => Boolean(el))
     if (sections.length === 0) return
-
     const observer = new IntersectionObserver(
       (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
+        const top = entries
+          .filter((e) => e.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
-        if (visible) setActive(visible.target.id)
+        if (top) setActive(top.target.id)
       },
-      { rootMargin: '-45% 0px -50% 0px', threshold: [0, 0.2, 0.5, 1] },
+      { rootMargin: '-40% 0px -55% 0px', threshold: [0, 0.15, 0.5, 1] },
     )
-    sections.forEach((section) => observer.observe(section))
+    sections.forEach((s) => observer.observe(s))
     return () => observer.disconnect()
   }, [])
 
@@ -48,112 +43,119 @@ export function Nav() {
   }, [open])
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50">
-      {/* 阅读进度 */}
-      <div className="h-[2px] w-full bg-transparent">
-        <div
-          className="h-full bg-gradient-to-r from-violet-500 via-fuchsia-400 to-cyan-400 transition-[width] duration-150 ease-out"
-          style={{ width: `${progress * 100}%` }}
-        />
-      </div>
+    <header
+      className={`fixed inset-x-0 top-0 z-50 border-b transition-colors duration-300 ${
+        scrolled ? 'border-line bg-paper/92 backdrop-blur-sm' : 'border-transparent bg-paper/70'
+      }`}
+    >
+      <nav className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-5 sm:px-6">
+        <a href="#overview" className="flex items-baseline gap-2.5">
+          <span className="font-serif text-[1.05rem] font-semibold tracking-wide text-ink">伙伴物语</span>
+          <span className="hidden font-mono text-[0.62rem] uppercase tracking-[0.2em] text-ink-faint sm:inline">
+            Partner Monogatari
+          </span>
+        </a>
 
-      <div
-        className={`transition-all duration-300 ${
-          scrolled ? 'border-b border-white/10 bg-ink-950/80 backdrop-blur-xl' : 'border-b border-transparent'
-        }`}
-      >
-        <nav className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
-          <a href="#overview" className="group flex items-center gap-3" aria-label="回到顶部">
-            <LogoMark className="h-9 w-9 transition-transform duration-300 group-hover:scale-105" />
-            <span className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold text-white">伙伴物语</span>
-              <span className="chip-mono text-[0.68rem] uppercase tracking-[0.16em] text-slate-400">
-                Partner Monogatari
-              </span>
-            </span>
+        <ul className="hidden items-center gap-5 lg:flex">
+          {navItems.map((item) => (
+            <li key={item.id}>
+              <a
+                href={`#${item.id}`}
+                className={`text-[0.88rem] transition-colors ${
+                  active === item.id ? 'text-seal' : 'text-ink-soft hover:text-ink'
+                }`}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+
+        <div className="flex items-center gap-3">
+          <div
+            className="hidden items-center rounded-md border border-line p-[2px] sm:flex"
+            role="group"
+            aria-label="主题"
+          >
+            {(['light', 'dark'] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setTheme(value)}
+                aria-pressed={theme === value}
+                className={`rounded-[3px] px-2 py-[0.15rem] text-[0.74rem] transition-colors ${
+                  theme === value ? 'bg-ink text-paper' : 'text-ink-faint hover:text-ink'
+                }`}
+              >
+                {value === 'light' ? '日' : '夜'}
+              </button>
+            ))}
+          </div>
+
+          <a
+            href={GITHUB}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="hidden text-[0.82rem] text-ink-soft transition-colors hover:text-seal md:inline"
+          >
+            GitHub
           </a>
 
-          <ul className="hidden items-center gap-1 lg:flex">
-            {navItems.map((item) => (
-              <li key={item.id}>
-                <a
-                  href={`#${item.id}`}
-                  className={`rounded-full px-3.5 py-2 text-sm transition-colors duration-200 ${
-                    active === item.id
-                      ? 'bg-white/8 text-white'
-                      : 'text-slate-400 hover:bg-white/5 hover:text-slate-100'
-                  }`}
-                >
-                  {item.label}
-                </a>
-              </li>
-            ))}
-          </ul>
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-line text-ink-soft lg:hidden"
+            aria-label={open ? '关闭目录' : '打开目录'}
+            aria-expanded={open}
+          >
+            <span className="text-base leading-none">{open ? '×' : '≡'}</span>
+          </button>
+        </div>
+      </nav>
 
-          <div className="flex items-center gap-2">
-            <a
-              href={GITHUB_REPO}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="hidden items-center gap-2 rounded-full border border-white/12 px-3.5 py-2 text-sm text-slate-300 transition-colors hover:border-white/25 hover:text-white sm:flex"
-            >
-              <Icon name="github" className="h-4 w-4" />
-              GitHub
-            </a>
-            <a
-              href="#feedback"
-              className="hidden items-center gap-1.5 rounded-full bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-violet-900/40 transition-transform hover:-translate-y-0.5 sm:flex"
-            >
-              提交反馈
-              <Icon name="arrowRight" className="h-4 w-4" />
-            </a>
-            <button
-              type="button"
-              onClick={() => setOpen((v) => !v)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/12 text-slate-200 transition-colors hover:border-white/25 lg:hidden"
-              aria-label={open ? '关闭菜单' : '打开菜单'}
-              aria-expanded={open}
-            >
-              <Icon name={open ? 'close' : 'menu'} className="h-5 w-5" />
-            </button>
-          </div>
-        </nav>
-      </div>
-
-      {/* 移动端菜单 */}
       {open ? (
-        <div className="border-b border-white/10 bg-ink-950/95 backdrop-blur-xl lg:hidden">
-          <ul className="mx-auto grid w-full max-w-7xl gap-1 px-5 py-4 sm:px-8">
+        <div className="border-t border-line bg-paper lg:hidden">
+          <ul className="mx-auto grid w-full max-w-6xl gap-1 px-5 py-4">
             {navItems.map((item) => (
               <li key={item.id}>
                 <a
                   href={`#${item.id}`}
                   onClick={() => setOpen(false)}
-                  className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm ${
-                    active === item.id ? 'bg-white/8 text-white' : 'text-slate-300 hover:bg-white/5'
+                  className={`flex items-center justify-between border-b border-dashed border-line py-2.5 text-[0.92rem] ${
+                    active === item.id ? 'text-seal' : 'text-ink-soft'
                   }`}
                 >
                   {item.label}
-                  <Icon name="arrowRight" className="h-4 w-4 opacity-50" />
+                  <span className="num text-ink-faint">§</span>
                 </a>
               </li>
             ))}
-            <li className="mt-2 flex gap-2">
+            <li className="flex items-center justify-between pt-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[0.8rem] text-ink-faint">主题</span>
+                <div className="flex items-center rounded-md border border-line p-[2px]">
+                  {(['light', 'dark'] as const).map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setTheme(value)}
+                      aria-pressed={theme === value}
+                      className={`rounded-[3px] px-3 py-1 text-[0.76rem] ${
+                        theme === value ? 'bg-ink text-paper' : 'text-ink-faint'
+                      }`}
+                    >
+                      {value === 'light' ? '日间' : '夜间'}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <a
-                href={GITHUB_REPO}
+                href={GITHUB}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/12 px-4 py-3 text-sm text-slate-200"
+                className="text-[0.82rem] text-ink-soft"
               >
-                <Icon name="github" className="h-4 w-4" />
-                GitHub 仓库
-              </a>
-              <a
-                href="#feedback"
-                onClick={() => setOpen(false)}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 px-4 py-3 text-sm font-medium text-white"
-              >
-                提交反馈
+                GitHub
               </a>
             </li>
           </ul>

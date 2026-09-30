@@ -1,147 +1,97 @@
-import { envBadges, hero, heroStats } from '../data/site'
-import { modules } from '../data/modules'
-import { Icon } from './Icons'
-import { Reveal } from './Reveal'
+import { ORG, REPO } from '../data/site'
+import { Sheet } from './paper'
 
-/** 首屏：定位文案 + 环境徽章 + 模块依赖预览 */
+const jars = [
+  {
+    id: 'shota_partner_api',
+    role: '前置',
+    note: '必须装。只提供接口，自己不含玩法内容。',
+  },
+  {
+    id: 'shota_partner',
+    role: '本体',
+    note: '伙伴、技能、战斗、工作、方块物品都在这里。',
+  },
+  {
+    id: 'shota_partner_extra_school',
+    role: '可选',
+    note: '学校维度。只依赖前置，可以单独装。',
+  },
+]
+
 export function Hero() {
   return (
-    <section id="overview" className="relative overflow-hidden pt-32 pb-16 sm:pt-40 sm:pb-24">
-      {/* 背景装饰 */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-        <div className="grid-bg absolute inset-0 [mask-image:radial-gradient(ellipse_at_50%_0%,black_5%,transparent_72%)]" />
-        <div className="animate-glow absolute -top-40 left-[8%] h-[34rem] w-[34rem] rounded-full bg-violet-600/22 blur-[130px]" />
-        <div
-          className="animate-glow absolute -top-24 right-[6%] h-[30rem] w-[30rem] rounded-full bg-cyan-500/18 blur-[130px]"
-          style={{ animationDelay: '1.6s' }}
-        />
-        <div className="absolute top-[42%] left-[42%] h-[24rem] w-[24rem] rounded-full bg-fuchsia-600/12 blur-[140px]" />
-      </div>
+    <section id="overview" className="scroll-mt-24 pt-28 pb-14 sm:pt-32">
+      <div className="mx-auto w-full max-w-6xl px-5 sm:px-6">
+        <p className="num uppercase tracking-[0.22em] text-ink-faint">Minecraft 1.20.1 · Forge 模组</p>
 
-      <div className="mx-auto w-full max-w-7xl px-5 sm:px-8">
-        <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
-          {/* 左：文案 */}
-          <div className="flex flex-col items-start gap-7">
-            <Reveal>
-              <span className="pill border-violet-400/25 bg-violet-500/10 text-violet-200">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-300" />
-                </span>
-                {hero.eyebrow}
-              </span>
-            </Reveal>
-
-            <Reveal delay={60}>
-              <h1 className="text-[2.75rem] font-bold leading-[1.05] tracking-tight text-white sm:text-6xl">
-                <span className="gradient-text">{hero.title}</span>
-                <span className="mt-3 block text-xl font-medium tracking-[0.02em] text-slate-300 sm:text-2xl">
-                  {hero.titleEn}
-                </span>
-              </h1>
-            </Reveal>
-
-            <Reveal delay={120}>
-              <p className="max-w-xl text-base leading-relaxed text-slate-400 sm:text-lg">{hero.intro}</p>
-            </Reveal>
-
-            <Reveal delay={180}>
-              <div className="flex flex-wrap items-center gap-3">
-                <a
-                  href={hero.primaryCta.href}
-                  className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-500 px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-violet-950/50 transition-transform hover:-translate-y-0.5"
-                >
-                  {hero.primaryCta.label}
-                  <Icon
-                    name="arrowRight"
-                    className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
-                  />
-                </a>
-                <a
-                  href={hero.secondaryCta.href}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/4 px-6 py-3 text-sm font-medium text-slate-200 transition-colors hover:border-white/28 hover:text-white"
-                >
-                  <Icon name="bug" className="h-4 w-4" />
-                  {hero.secondaryCta.label}
-                </a>
-              </div>
-            </Reveal>
-
-            <Reveal delay={240}>
-              <ul className="flex flex-wrap gap-2 pt-1">
-                {envBadges.map((badge) => (
-                  <li key={badge.label} className="pill" title={badge.hint}>
-                    <span className="text-slate-400">{badge.label}</span>
-                    <span className="font-medium text-slate-200">{badge.value}</span>
-                  </li>
-                ))}
-              </ul>
-            </Reveal>
-          </div>
-
-          {/* 右：模块依赖预览 */}
-          <Reveal delay={160} className="lg:pl-4">
-            <div className="card relative overflow-hidden p-5 sm:p-6">
-              <div className="flex items-center justify-between">
-                <span className="chip-mono uppercase tracking-[0.18em] text-slate-400">Module Map</span>
-                <span className="pill border-white/8 text-[0.7rem] text-slate-400">1 前置 + 2 内容包</span>
-              </div>
-
-              <div className="mt-5 space-y-3">
-                {modules.map((mod, index) => (
-                  <div key={mod.id} className="relative">
-                    <a
-                      href={`#module-${mod.id}`}
-                      className={`card card-hover flex items-start gap-3.5 p-4 ${mod.accent.border} ${mod.accent.bg}`}
-                    >
-                      <span
-                        className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${mod.accent.gradient} text-white shadow-lg`}
-                      >
-                        <Icon
-                          name={mod.id === 'api' ? 'branch' : mod.id === 'core' ? 'cube' : 'map'}
-                          className="h-4.5 w-4.5"
-                        />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-semibold text-white">{mod.name}</span>
-                          <span className={`chip-mono ${mod.accent.text}`}>v{mod.version}</span>
-                        </span>
-                        <span className="mt-1 block text-xs leading-relaxed text-slate-400">{mod.role}</span>
-                      </span>
-                    </a>
-                    {index < modules.length - 1 ? (
-                      <div className="flex items-center gap-2 py-1.5 pl-7">
-                        <span className="h-3 w-px bg-white/15" />
-                        <span className="chip-mono text-[0.68rem] text-slate-400">
-                          {index === 0 ? 'Core 依赖 API' : 'Extra-School 只依赖 API'}
-                        </span>
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-
-              <p className="mt-5 border-t border-white/8 pt-4 text-xs leading-relaxed text-slate-400">
-                依赖箭头从内容模块指向公共契约层。学校追加包可以脱离游戏本体单独安装 —— 这是本次拆分的主要目标。
-              </p>
-            </div>
-          </Reveal>
+        <div className="mt-5 flex flex-wrap items-end justify-between gap-6">
+          <h1 className="font-serif text-[2.4rem] leading-[1.15] tracking-tight text-ink sm:text-[3.1rem]">
+            伙伴物语
+            <span className="mt-2 block font-mono text-[0.8rem] font-normal uppercase tracking-[0.28em] text-ink-faint">
+              Partner Monogatari
+            </span>
+          </h1>
+          <span className="seal mb-2 text-[0.82rem]">玩法说明</span>
         </div>
 
-        {/* 数据条 */}
-        <Reveal delay={120}>
-          <dl className="mt-16 grid grid-cols-2 gap-3 sm:mt-20 sm:grid-cols-4 sm:gap-4">
-            {heroStats.map((stat) => (
-              <div key={stat.label} className="card px-5 py-4">
-                <dt className="text-2xl font-semibold text-white sm:text-3xl">
-                  <span className="gradient-text">{stat.value}</span>
-                </dt>
-                <dd className="mt-1 text-xs leading-snug text-slate-400 sm:text-sm">{stat.label}</dd>
-              </div>
-            ))}
-          </dl>
-        </Reveal>
+        <div className="mt-7 grid gap-8 lg:grid-cols-[1.25fr_1fr] lg:gap-12">
+          <div className="prose-paper max-w-2xl text-[0.98rem]">
+            <p>
+              这是一个 Minecraft 1.20.1 的 Forge 模组。野外会遇到没有主的伙伴：先把它打残，
+              再用捕捉石收进队伍；也可以拿随机召唤石，从可选角色里直接抽一位。
+            </p>
+            <p>
+              每位伙伴有一个专属技能、六个可以自由加点的成长项。它们能替你打架、帮你种地干活、
+              里面有十二个住校的学生。
+            </p>
+            <p className="text-ink-faint">
+              这一页是给玩家看的玩法说明。装之前先看下面的 jar 清单和安装要求，
+              出了问题到页面最下面的反馈区提交。
+            </p>
+          </div>
+
+          <Sheet className="p-5">
+            <h2 className="text-[0.95rem] font-semibold text-ink">三个 jar，各装各的</h2>
+            <hr className="rule my-3" />
+            <ul className="space-y-3">
+              {jars.map((jar) => (
+                <li key={jar.id} className="text-[0.88rem] leading-relaxed">
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <code className="text-ink">{jar.id}</code>
+                    <span className="tag">{jar.role}</span>
+                  </div>
+                  <p className="mt-1 text-ink-soft">{jar.note}</p>
+                </li>
+              ))}
+            </ul>
+            <hr className="rule my-4" />
+            <p className="text-[0.84rem] text-ink-soft">
+              运行要求：Minecraft 1.20.1、Forge 47.x、Java 17。本体还需要{' '}
+              <code>geckolib 4.8.x</code>，学校包不需要。
+            </p>
+          </Sheet>
+        </div>
+
+        <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3 text-[0.9rem]">
+          <a href="#gameplay" className="link-quiet text-ink">
+            读玩法说明 ↓
+          </a>
+          <a href="#install" className="link-quiet text-ink-soft">
+            安装与前置
+          </a>
+          <a href="#feedback" className="link-quiet text-ink-soft">
+            遇到问题，提交反馈
+          </a>
+          <a
+            href={`https://github.com/${ORG}/${REPO}`}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="link-quiet text-ink-soft"
+          >
+            GitHub 仓库
+          </a>
+        </div>
       </div>
     </section>
   )

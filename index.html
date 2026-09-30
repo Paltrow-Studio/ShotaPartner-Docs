@@ -4,25 +4,44 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>伙伴物语 Partner Monogatari · 模组说明与问题反馈中心</title>
+    <title>伙伴物语 Partner Monogatari · 玩法说明与问题反馈</title>
     <meta
       name="description"
-      content="Minecraft 1.20.1 Forge 模组《伙伴物语》官方说明页：三个模块（Core 游戏本体 / API 公共契约 / Extra-School 学校维度追加包）各自负责什么、需要哪些前置、如何安装，以及公开的问题反馈入口。"
+      content="Minecraft 1.20.1 Forge 模组《伙伴物语》玩法说明：伙伴获取与养成、技能与轮盘、战斗 AI、工作与后勤、坟墓复活、该坐骑坐骑、学校维度，以及问题反馈入口。"
     />
-    <meta name="theme-color" content="#05070f" />
-    <meta name="color-scheme" content="dark" />
-    <meta name="keywords" content="伙伴物语, Partner Monogatari, Minecraft, Forge, 1.20.1, ShotaPartner, 模组, 问题反馈" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f3eee2" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#191713" media="(prefers-color-scheme: dark)" />
+    <meta name="keywords" content="伙伴物语, Partner Monogatari, Minecraft, Forge, 1.20.1, 模组玩法, 问题反馈" />
     <link rel="canonical" href="https://paltrow-studio.github.io/ShotaPartner-Docs/" />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="伙伴物语 Partner Monogatari" />
-    <meta property="og:title" content="伙伴物语 Partner Monogatari · 模组说明与问题反馈中心" />
+    <meta property="og:title" content="伙伴物语 Partner Monogatari · 玩法说明与问题反馈" />
     <meta
       property="og:description"
-      content="27 位伙伴、专属技能与战斗 AI，拆分为三个可独立安装、独立升级的模块。查看功能说明、安装前置，或直接提交问题反馈。"
+      content="27 位伙伴、技能轮盘、战斗与工作系统、学校维度。这里是模组的玩法说明与公开反馈区。"
     />
     <meta property="og:url" content="https://paltrow-studio.github.io/ShotaPartner-Docs/" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:card" content="summary" />
+
+    <script>
+      // 主题在首屏绘制前定好，避免白闪 / 黑闪。localStorage 优先，其次跟系统。
+      ;(function () {
+        try {
+          var saved = localStorage.getItem('sp-theme')
+          var theme =
+            saved === 'light' || saved === 'dark'
+              ? saved
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+          document.documentElement.dataset.theme = theme
+        } catch (e) {
+          document.documentElement.dataset.theme = 'light'
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

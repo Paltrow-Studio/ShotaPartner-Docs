@@ -1,6 +1,6 @@
 # ShotaPartner-Docs
 
-**伙伴物语（Partner Monogatari）** 的对外说明页与公开问题反馈区。
+**伙伴物语（Partner Monogatari）** 的玩法说明页与公开问题反馈区。
 
 - 🌐 线上地址：**https://paltrow-studio.github.io/ShotaPartner-Docs/**
 - 🐛 问题反馈：[新建 issue](https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/new/choose) · [浏览已有 issue](https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues)
@@ -10,8 +10,9 @@
 
 本仓库只有两个职责，不存放模组源码：
 
-1. **说明页**：用现代网页介绍拆分后的三个模块（Core 游戏本体 / API 公共契约 / Extra-School 学校维度追加包）各自负责什么、需要哪些前置、如何安装，以及常见问题。
-2. **公开反馈区**：三个模块仓库暂未公开，因此玩家的所有反馈统一提交到本仓库的 issue 区。页面上的「问题反馈」向导会帮你把**问题类型**与**涉及模块**预填进表单标题与标签，提交后可直接分流。
+2. **公开反馈区**：三个模组仓库暂未公开，因此玩家的反馈统一提交到本仓库的 issue 区。页面上的反馈向导会帮你把**问题类型**与**涉及模块**预填进表单标题与标签，提交后直接分流。
+
+页面是**类纸化**设计：米白纸面、宋体正文、虚线规矩线、朱砂印章式点缀，右上角可以切换 **日间 / 夜间**（默认跟随系统，选择记在 localStorage）。
 
 | 模块 | modId | 版本 | 必需前置 |
 | --- | --- | --- | --- |
@@ -24,7 +25,7 @@
 ## 技术栈与本地开发
 
 Vite + React 19 + TypeScript + Tailwind CSS v4，构建产物是纯静态站点，部署到 GitHub Pages。
-页面不请求任何外部 CDN 或字体服务（使用系统字体栈），也不依赖后端接口。
+页面不请求任何外部 CDN、字体服务或后端接口；纸面颗粒是一段内联的 SVG 噪点。
 
 ```bash
 npm ci            # 安装依赖（严格按 package-lock.json）
@@ -53,26 +54,38 @@ push → main ─→ npm ci ─→ npm run build ─→ 校验 dist/index.html �
 ```
 src/
 ├─ App.tsx                 # 页面装配 + FAQ 结构化数据 + 回到顶部
-├─ index.css              # 设计令牌（配色/动画）、组件类、无障碍与动效偏好
-├─ components/            # Nav / Hero / Architecture / Modules / Features / Install / Faq / Feedback / Footer
+├─ index.css              # 两套主题的语义色板、纸面质感、组件类、无障碍与动效偏好
+├─ lib/theme.ts           # 日间/夜间主题状态（首屏防闪由 index.html 内联脚本完成）
+├─ components/
+│  ├─ Nav / Hero / Contents / Roster / Reference / Install / Faq / Feedback / Footer
+│  ├─ Guide.tsx           # 玩法章节渲染器（按 data/guide.ts 的块类型渲染）
+│  └─ paper.tsx           # 纸面基础件：行内标记解析、Sheet、章节标题、批注
 └─ data/                  # ★ 所有文案与内容都在这里，改内容基本只动这层
-   ├─ site.ts             # 站点常量、导航、首屏文案、环境徽章
-   ├─ modules.ts          # 三个模块的简介/指标/功能亮点/前置依赖、架构与设计取舍
-   ├─ features.ts         # 「功能一览」六大分组
-   ├─ faq.ts              # 常见问题（带 安装/模块/兼容/反馈 标签）
-   └─ feedback.ts         # 反馈类型、模块选项、issue 表单深链与提交清单
+   ├─ site.ts             # 站点常量与导航
+   ├─ guide.ts            # 玩法章节（11 章，正文主体）
+   ├─ roster.ts           # 27 位伙伴的名册与六项初始训练值
+   ├─ reference.ts        # 按键、命令、物品、方块、状态效果
+   ├─ modules.ts          # 三个 jar 的版本与前置
+   ├─ faq.ts              # 常见问题
+   ├─ feedback.ts         # 反馈类型、模块选项、issue 表单深链
+   └─ types.ts            # 章节数据结构
 ```
 
 ### 内容维护指引
 
 | 要改什么 | 改哪里 |
 | --- | --- |
-| 版本号、前置依赖、功能点 | `src/data/modules.ts` |
-| 首屏文案、环境徽章、导航 | `src/data/site.ts` |
-| 功能分组（玩法一览） | `src/data/features.ts` |
+| 玩法说明正文（章节、表格、批注） | `src/data/guide.ts` |
+| 伙伴名册与训练值 | `src/data/roster.ts` |
+| 按键 / 命令 / 物品 / 状态效果 | `src/data/reference.ts` |
+| 版本号与前置依赖 | `src/data/modules.ts` |
+| 导航、首屏文案 | `src/data/site.ts` |
 | 常见问题 | `src/data/faq.ts` |
 | 反馈类型 / 模块选项 / 预填逻辑 | `src/data/feedback.ts` |
-| 配色、动画、卡片样式 | `src/index.css` 的 `@theme` 与 `@layer components` |
+| 配色、纸面质感、字体 | `src/index.css`（`:root` 与 `[data-theme='dark']` 两套变量） |
+
+`guide.ts` 里每章由若干内容块组成，可用的 `kind`：
+`p`（段落，支持 `` `代码` ``、`**加粗**`、`[文字](链接)`）、`sub`（小标题）、`list`、`steps`、`keys`、`table`、`note`（批注）。
 
 改动后请跑一次 `npm run build`（含类型检查）再提交；CI 会用同样的命令构建。
 

@@ -1,120 +1,50 @@
-import { DISCUSSIONS, GITHUB_REPO, ISSUES, ORG_URL, footerNote, navItems } from '../data/site'
-import { modules } from '../data/modules'
-import { Icon, LogoMark } from './Icons'
+import { DISCUSSIONS, GITHUB_REPO, ISSUES, ORG_URL } from '../data/site'
 
 export function Footer() {
   return (
-    <footer className="relative border-t border-white/8 bg-ink-900/60">
-      <div className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-8">
-        <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
-          <div>
-            <div className="flex items-center gap-3">
-              <LogoMark className="h-10 w-10" />
-              <div>
-                <p className="text-sm font-semibold text-white">伙伴物语</p>
-                <p className="chip-mono text-[0.68rem] uppercase tracking-[0.16em] text-slate-400">
-                  Partner Monogatari
-                </p>
-              </div>
-            </div>
-            <p className="mt-4 max-w-sm text-xs leading-relaxed text-slate-400">{footerNote.text}</p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <span className="pill chip-mono text-[0.68rem]">Minecraft 1.20.1</span>
-              <span className="pill chip-mono text-[0.68rem]">Forge 47.4.23</span>
-              <span className="pill chip-mono text-[0.68rem]">JDK 17</span>
-            </div>
+    <footer className="mt-8 border-t border-line bg-paper-sunk/60">
+      <div className="mx-auto w-full max-w-6xl px-5 py-12 sm:px-6">
+        <div className="flex flex-wrap items-start justify-between gap-8">
+          <div className="max-w-md">
+            <p className="font-serif text-[1.05rem] font-semibold text-ink">伙伴物语</p>
+            <p className="mt-1 font-mono text-[0.62rem] uppercase tracking-[0.2em] text-ink-faint">
+              Partner Monogatari
+            </p>
+            <p className="mt-3 text-[0.84rem] leading-relaxed text-ink-soft">
+              模组由 Paltrow Studio 开发。三个模组仓库暂未公开源码，但这一页所在的仓库对所有人开放，
+              遇到问题可以在这边提。
+            </p>
           </div>
 
-          <nav aria-label="页面导航">
-            <p className="chip-mono uppercase tracking-[0.16em] text-slate-400">本页</p>
-            <ul className="mt-4 space-y-2.5">
-              {navItems.map((item) => (
-                <li key={item.id}>
-                  <a href={`#${item.id}`} className="inline-block py-1 text-xs text-slate-400 transition-colors hover:text-white">
-                    {item.label}
+          <nav className="text-[0.84rem]">
+            <p className="num uppercase tracking-[0.16em] text-ink-faint">链接</p>
+            <ul className="mt-3 space-y-1.5">
+              {[
+                { href: ISSUES, label: '问题反馈（Issues）' },
+                { href: DISCUSSIONS, label: '讨论区（Discussions）' },
+                { href: GITHUB_REPO, label: '本仓库' },
+                { href: ORG_URL, label: 'Paltrow Studio' },
+              ].map((link) => (
+                <li key={link.href}>
+                  <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="link-quiet inline-block py-0.5 text-ink-soft"
+                  >
+                    {link.label}
                   </a>
                 </li>
               ))}
             </ul>
           </nav>
-
-          <div>
-            <p className="chip-mono uppercase tracking-[0.16em] text-slate-400">三个模块</p>
-            <ul className="mt-4 space-y-2.5">
-              {modules.map((mod) => (
-                <li key={mod.id}>
-                  <a
-                    href={`#module-${mod.id}`}
-                    className="flex items-center gap-2 py-1 text-xs text-slate-400 transition-colors hover:text-white"
-                  >
-                    <span className={`h-1.5 w-1.5 rounded-full ${mod.accent.dot}`} />
-                    <span className="chip-mono">{mod.modId}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <p className="chip-mono uppercase tracking-[0.16em] text-slate-400">反馈与联系</p>
-            <ul className="mt-4 space-y-2.5">
-              <li>
-                <a
-                  href={GITHUB_REPO}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="flex items-center gap-2 py-1 text-xs text-slate-400 transition-colors hover:text-white"
-                >
-                  <Icon name="github" className="h-3.5 w-3.5" />
-                  本仓库（Docs）
-                </a>
-              </li>
-              <li>
-                <a
-                  href={ISSUES}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="flex items-center gap-2 py-1 text-xs text-slate-400 transition-colors hover:text-white"
-                >
-                  <Icon name="bug" className="h-3.5 w-3.5" />
-                  问题反馈（Issues）
-                </a>
-              </li>
-              <li>
-                <a
-                  href={DISCUSSIONS}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="flex items-center gap-2 py-1 text-xs text-slate-400 transition-colors hover:text-white"
-                >
-                  <Icon name="users" className="h-3.5 w-3.5" />
-                  讨论区（Discussions）
-                </a>
-              </li>
-              <li>
-                <a
-                  href={ORG_URL}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="flex items-center gap-2 py-1 text-xs text-slate-400 transition-colors hover:text-white"
-                >
-                  <Icon name="external" className="h-3.5 w-3.5" />
-                  Paltrow Studio
-                </a>
-              </li>
-            </ul>
-          </div>
         </div>
 
-        <div className="hairline my-10" />
+        <hr className="rule my-8" />
 
-        <div className="flex flex-col gap-3 text-[0.7rem] leading-relaxed text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            © {new Date().getFullYear()} Paltrow Studio · {footerNote.license}
-          </p>
-          <p>
-            非 Minecraft 官方产品，未经 Mojang 或 Microsoft 批准或关联。本页由 GitHub Pages 托管。
-          </p>
+        <div className="flex flex-col gap-2 text-[0.78rem] text-ink-faint sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} Paltrow Studio · All Rights Reserved</p>
+          <p>非 Minecraft 官方产品，未经 Mojang 或 Microsoft 批准或关联。</p>
         </div>
       </div>
     </footer>
