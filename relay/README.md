@@ -32,17 +32,33 @@ node relay/server.mjs
 生产环境建议用 systemd 或容器托管，并在前面放一层 HTTPS 反向代理（Caddy / Nginx）。
 自测：`DRY_RUN=1 node relay/server.mjs`，此时不调用 GitHub API，只回显将会创建的内容。
 
-### 2. Cloudflare Worker
+### 2. Cloudflare Worker（绑自有域名）
+
+同目录的 `wrangler.toml` 已备好，把 `routes` 里的域名换成你托管在 Cloudflare 的子域即可：
+
+```toml
+routes = [{ pattern = "relay.example.com", custom_domain = true }]
+
+[vars]
+GITHUB_REPO = "Paltrow-Studio/ShotaPartner-Docs"
+ALLOWED_ORIGINS = "https://paltrow-studio.github.io"
+RATE_LIMIT_PER_HOUR = "5"
+```
 
 ```bash
 cd relay
-npx wrangler deploy worker.js --name shota-feedback-relay --compatibility-date 2026-09-01
-npx wrangler secret put GITHUB_TOKEN
+npx wrangler login
+npx wrangler deploy                        # 按 wrangler.toml 建 Worker 与自定义域（自动签发证书）
+npx wrangler secret put GITHUB_TOKEN       # 细粒度令牌，仅 Issues: Read and write
 ```
 
-其余变量在 wrangler 配置里以明文变量写入：`GITHUB_REPO`、`ALLOWED_ORIGINS`、`RATE_LIMIT_PER_HOUR`、`RELAY_SECRET`。
+**可达性**：`*.workers.dev` 在国内常被 DNS 污染，因此**必须绑自有域名**；换域名后在 `site.ts` 里同步 `FEEDBACK_RELAY_URL` 即可。国内稳定性取决于该域名在你所在网络的解析与落地节点，部署完请做一次实测（见下节）。
 
-**可达性提示**：`*.workers.dev` 在国内常被 DNS 污染，不稳定；如果部署在 Cloudflare，建议绑定自有域名并实测。Worker 的模块级内存不跨边缘节点共享，限流是尽力而为——需要严格限流请改 Durable Object / KV，或开启 Turnstile。
+**跨节点限流（可选）**：Worker 的模块级内存只在单个 isolate 内有效，默认限流是尽力而为。要跨边缘节点共享计数：
+
+```bash
+npx wrangler kv namespace create RATE_KV   # 把输出的 id 填进 wrangler.toml 再取消注释
+```
 
 ## 令牌要求
 
@@ -62,6 +78,7 @@ npx wrangler secret put GITHUB_TOKEN
 | `RATE_LIMIT_PER_HOUR` | `5` | 单 IP 每小时可成功创建的 issue 数 |
 | `RELAY_SECRET` | 空 | 设置后要求请求头 `X-Relay-Key` 一致；对静态页没有遮蔽作用，仅用于挡扫描脚本 |
 | `DRY_RUN` | 空 | `1` 时只校验并回显，不创建 issue |
+| `GITHUB_API_BASE` | `https://api.github.com` | 仅用于本地联调（指向 mock）或 GitHub Enterprise |
 
 ## 接口
 
@@ -113,7 +130,7 @@ npx wrangler secret put GITHUB_TOKEN
 
 ## 接入页面
 
-在 `src/data/site.ts` 填入中继地址（留空则完全不显示提交按钮，页面其余部分不受影响）：
+在 `src/data/site.ts` 填入中继地址（留空则完全不显示提交区块，页面其余部分不受影响）：
 
 ```ts
 export const FEEDBACK_RELAY_URL = 'https://relay.example.com'
@@ -125,19 +142,23 @@ export const FEEDBACK_RELAY_URL = 'https://relay.example.com'
 VITE_RELAY_URL=http://127.0.0.1:8787 npm run build
 ```
 
-## 上线前的自测
+页面不会盲目相信中继存在：反馈区进入视口时会请求 `/health`（计入「资源线路自动测试」的同一套实测流程），**只有探测通过才启用「直接提交到 issue 区」按钮**，探测失败时按钮停用并提示改用复制或下载。国内打开页面若显示「中继不可用」，说明该域名在当前网络不可达，需要换域名或换部署位置。
+
+## 自测
+
+### 本地（不访问 GitHub、不需要令牌）
 
 ```bash
-# 1. 干跑，确认校验与标签映射
-DRY_RUN=1 node relay/server.mjs &
-curl -s localhost:8787/health
-curl -s -X POST localhost:8787/issue -H 'content-type: application/json' \
-  -d '{"type":"bug","module":"core","summary":"标题示例","body":"### 环境\n- 模组版本：0.3.1\n"}'
-
-# 2. 真实提交一次，确认令牌权限（会自动创建一条 issue，测试后手动关闭）
-GITHUB_TOKEN=xxx node relay/server.mjs &
-curl -s -X POST localhost:8787/issue -H 'content-type: application/json' \
-  -d '{"type":"bug","module":"docs","summary":"中继自测，可关闭","body":"这是一条用于验证中继链路的测试 issue，请忽略。\n"}'
+node relay/selftest.mjs      # 11 项：健康检查、标签映射、校验、蜜罐、来源白名单、限流顺序
 ```
+
+### 线上（部署完成后）
+
+```bash
+node relay/verify-remote.mjs https://relay.example.com            # 只读检查，不在 GitHub 留下内容
+node relay/verify-remote.mjs https://relay.example.com --live     # 追加一次真实提交，确认令牌权限
+```
+
+检查项：健康检查与回显来源、`OPTIONS` 预检、非法类型被拒、蜜罐被拒、非法来源被拒、生产模式（非 `DRY_RUN`），`--live` 时再真实建一条 issue 并打印链接。
 
 回滚：把 `FEEDBACK_RELAY_URL` 清空重新构建即可，页面回到纯静态的离线草稿模式。

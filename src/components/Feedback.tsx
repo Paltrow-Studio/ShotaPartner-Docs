@@ -305,7 +305,7 @@ export function Feedback() {
               <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-2 text-[0.86rem]">
                 <button
                   type="button"
-                  disabled={submitBusy || summary.trim().length < 4}
+                  disabled={submitBusy || summary.trim().length < 4 || relayHealth !== 'ok'}
                   onClick={() => void submitByRelay()}
                   className="rounded-md border border-seal px-4 py-2 text-seal transition-colors hover:bg-paper-sunk disabled:cursor-not-allowed disabled:border-line disabled:text-ink-faint"
                 >
@@ -324,8 +324,14 @@ export function Feedback() {
                     提交失败：{submitMessage}
                   </span>
                 ) : null}
-                {submitState === 'idle' && summary.trim().length < 4 ? (
+                {submitState !== 'ok' && relayHealth === 'fail' ? (
+                  <span className="text-ink-faint">中继探测未通过，按钮已停用；请改用复制或下载。</span>
+                ) : null}
+                {submitState === 'idle' && relayHealth === 'ok' && summary.trim().length < 4 ? (
                   <span className="text-ink-faint">填写问题概述后即可提交。</span>
+                ) : null}
+                {relayHealth === 'checking' ? (
+                  <span className="text-ink-faint">正在探测中继…</span>
                 ) : null}
               </div>
             </div>

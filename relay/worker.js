@@ -5,15 +5,16 @@
  *   GET  /health → { ok, repo, dryRun, time }
  *   POST /issue  → { ok, issue: { number, url } }
  *
- * 部署（需要 Cloudflare 账号）：
- *   cd relay && npx wrangler deploy worker.js --name shota-feedback-relay \
- *     --compatibility-date 2026-09-01
- *   npx wrangler secret put GITHUB_TOKEN
- * 其余变量用 plain_text：GITHUB_REPO / ALLOWED_ORIGINS / RATE_LIMIT_PER_HOUR / RELAY_SECRET。
+ * 部署（需要 Cloudflare 账号；推荐绑自有域名，workers.dev 在国内不稳定）：
+ *   cd relay
+ *   npx wrangler deploy                       # 读取同目录 wrangler.toml
+ *   npx wrangler secret put GITHUB_TOKEN      # 细粒度令牌，仅 Issues 写
+ * 变量在 wrangler.toml 的 [vars] 里：GITHUB_REPO / ALLOWED_ORIGINS /
+ * RATE_LIMIT_PER_HOUR / GITHUB_API_BASE。RELAY_SECRET 也用 secret put 下发。
  *
- * 注意：Worker 的模块级内存只在单个 isolate 内有效，跨边缘节点不共享，
- * 因此这里的限流是尽力而为。需要严格限流请改用 Durable Object / KV，
- * 或打开 Cloudflare Turnstile 并把校验放在本文件开头。
+ * 限流：绑定 KV 后跨边缘节点共享计数，见 wrangler.toml 中注释掉的 kv_namespaces；
+ * 未绑定时退回模块级内存（单 isolate 有效），属于尽力而为。要更严格的防护可叠加
+ * Cloudflare Turnstile，把校验放在本文件开头。
  */
 
 const TITLE_MAX = 120
@@ -30,7 +31,19 @@ const MODULE_LABELS = { core: 'module:core', api: 'module:api', school: 'module:
 
 const hits = new Map()
 
-function rateLimited(ip, limit) {
+/**
+ * 限流。绑定了 KV（RATE_KV）时用它，计数在各边缘节点之间共享；
+ * 没绑定时退回模块级内存，只在单个 isolate 内有效。
+ * KV 的读写在并发下不是原子的，属于尽力而为；要严格限流请改 Durable Object。
+ */
+async function rateLimited(env, ip, limit) {
+  if (env.RATE_KV) {
+    const key = `rl:${ip}`
+    const current = Number((await env.RATE_KV.get(key)) ?? 0)
+    if (current >= limit) return true
+    await env.RATE_KV.put(key, String(current + 1), { expirationTtl: 3600 })
+    return false
+  }
   const now = Date.now()
   const list = (hits.get(ip) ?? []).filter((t) => t > now - 3600_000)
   if (list.length >= limit) {
@@ -133,7 +146,7 @@ export default {
     if (checked.error) return json({ ok: false, error: checked.error }, 400, headers)
 
     const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
-    if (rateLimited(ip, limit)) {
+    if (await rateLimited(env, ip, limit)) {
       return json({ ok: false, error: `提交过于频繁，每小时最多 ${limit} 条` }, 429, headers)
     }
 
