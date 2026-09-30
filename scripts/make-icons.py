@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""从项目 logo 生成站点图标与分享图。
+"""从组织 logo 生成站点图标与分享图。
 
-logo 源文件：assets/brand/paltrow_studio_logo_mods.png
-  取自 ShotaPartner-Core 的
-  src/main/resources/assets/shota_partner/textures/gui/paltrow_studio_logo_mods.png
-  即 mods.toml 中 logoFile 指向的「256×256 纯图形版」，也是游戏内 Screen 水印用的那张。
+logo 源文件：assets/brand/paltrow-studio-org.png
+  即组织头像，取法（公开地址，不涉及私有仓库）：
+      curl -L -o assets/brand/paltrow-studio-org.png 'https://github.com/Paltrow-Studio.png?size=512'
+  原始返回为 460×460 PNG，透明底、双色标记，与仓库内保存的副本一致；
+  更新头像后重新执行上面的命令并重跑本脚本即可。
 
 用法：
     python3 scripts/make-icons.py            # 重新生成 public/ 下的全部图标
@@ -32,7 +33,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / 'assets' / 'brand' / 'paltrow_studio_logo_mods.png'
+SRC = ROOT / 'assets' / 'brand' / 'paltrow-studio-org.png'
 PUBLIC = ROOT / 'public'
 
 # 与 src/index.css 的主题变量保持一致

@@ -92,10 +92,13 @@ src/
 
 ## 站点图标
 
-图标直接使用项目 logo：`assets/brand/paltrow_studio_logo_mods.png`，取自 ShotaPartner-Core 的
-`src/main/resources/assets/shota_partner/textures/gui/paltrow_studio_logo_mods.png`——
-即 mods.toml 中 `logoFile` 指向的「256×256 纯图形版」，也是游戏内 Screen 底部水印用的那张
-（同一张的 800×800 变体是带留白的另一版，图标一律用 256 纯图形版）。
+图标直接使用组织 logo：`assets/brand/paltrow-studio-org.png`，即组织头像的公开副本。取法：
+
+```bash
+curl -L -o assets/brand/paltrow-studio-org.png 'https://github.com/Paltrow-Studio.png?size=512'
+```
+
+返回 460×460 透明底 PNG，仓库内保存一份副本以便离线重新生成；头像更新后重新执行该命令并重跑脚本即可。本仓库不引用任何私有仓库的文件。
 
 `public/` 下的图标全部由脚本生成，不要手改：
 
@@ -110,7 +113,7 @@ python3 scripts/make-icons.py --check  # 只校验尺寸与不透明度
 2. 生成透明底 PNG（favicon-32）、多尺寸 ICO（16/32/48）、纸底不透明贴图（apple-touch 180、192、512）。
 3. `favicon.svg` 内嵌 160px 标记，并用 SVG 内的 `prefers-color-scheme` 把底色在纸色
    `#f3eee2` 与墨色 `#241f18` 之间切换——浏览器用深色标签栏时图标不会糊成一片。
-   标记只有两色，内嵌图统一用 128 色调色板量化，7.7 KB 而不是 33 KB。
+   标记只有两色，内嵌图统一用 128 色调色板量化，8.2 KB 而不是 33 KB。
 4. `og-image.png`：1200×630 纸面卡片，左侧 logo、右侧「伙伴物语 / Partner Monogatari /
    玩法说明与问题反馈」与版本信息，右下角站点地址。
 
@@ -118,27 +121,35 @@ python3 scripts/make-icons.py --check  # 只校验尺寸与不透明度
 
 ## 国内网络下的访问与反馈
 
-GitHub 在国内经常无法直接访问，这一点没有办法靠前端绕过，因此页面做了两件事：
+GitHub 在国内经常无法直接访问，这一点没有办法靠前端绕过，因此页面做了三件事：
 
-1. **检测与说明**：反馈区进入视口后会用 6 秒超时探测 `github.com`；连不上时明确写出「issue 表单需要在 github.com 登录后填写，国内的文件加速镜像只能转发 Releases / Raw 等文件路径，无法代理表单与登录页」，而不是让用户点开一个打不开的链接。
-2. **不依赖 GitHub 的反馈内容生成**：反馈区把「标题 + 标签 + 与表单字段一一对应的正文框架」生成好，可一键复制或下载为 `.md` 文件（文件名形如 `伙伴物语-反馈-crash-2026-09-30.md`）。用户可以在任何能访问 GitHub 的环境里粘进表单，也可以直接把文件发给维护者。
+1. **检测与说明**：反馈区进入视口后会用 6 秒超时探测 `github.com`；连不上时明确写出「issue 表单需要在 github.com 登录后填写，资源加速节点无法承载表单与登录页」，而不是让用户点开一个打不开的链接。
+2. **资源线路自动测试**：同一时刻逐个实测「直连 + 各加速节点」（下载本仓库的 `public/favicon.svg`，校验正文含 `<svg>` 并计时，单节点 8 秒超时），按可用性与耗时排序后**自动选用最快的一条**来渲染「下载本站源码 zip」与「查看 README」两个资源链接，并在页面上列出每个节点的实测结果。这些节点对 raw 路径返回 `access-control-allow-origin: *`，所以浏览器能读到状态码与正文，测试结果是真下载而不是探测包。
+3. **不依赖 GitHub 的反馈内容生成**：反馈区把「标题 + 标签 + 与表单字段一一对应的正文框架」生成好，可一键复制或下载为 `.md` 文件（文件名形如 `伙伴物语-反馈-crash-2026-09-30.md`）。用户可以在任何能访问 GitHub 的环境里粘进表单，也可以直接把文件发给维护者。
 
-### 实测结论（2026-09）
+### 实测结论（2026-09-30）
 
-| 方案 | 结果 |
-| --- | --- |
-| `github.com` 直连 | issue 表单 302 跳登录页，属正常行为 |
-| gh-proxy.com / ghfast.top / ghproxy.net | `releases/download`、`archive/refs/heads/*.zip`、`raw.githubusercontent.com` 返回 200，但仓库 HTML 页面返回 403 或镜像自带的 404 页 |
-| kkgithub.com / bgithub.xyz / hub.gitmirror.com / github.moeyy.xyz | 无法连通或拒绝服务 |
+| 节点 | 仓库页 / issue 页（HTML） | raw | archive zip |
+| --- | --- | --- | --- |
+| `github.com` 直连 | 仓库页 200；issue 页 302 跳登录页（正常行为） | — | — |
+| gh-proxy.com | 404（节点自带错误页） | 200 | 200 |
+| ghfast.top | 403 | 200 | 200 |
+| gh.llkk.cc | 403 | 200 | 200 |
+| gh.jasonzeng.dev | 200 但是节点自己的页面 | 200 | 200 |
+| ghproxy.net | **302 跳转到 survey-smiles.com（垃圾站点）** | 200 | 200 |
+| bgithub.xyz / kkgithub.com / hub.whtrys.space / github.moeyy.xyz | 403 或不可达 | — | — |
 
-因此**没有任何国内镜像可以承载 issue 表单与登录流程**。若确实需要在国内直接收集反馈，只能自建中转（例如 Cloudflare Worker + GitHub Token 代发 issue），代价是需要维护一个服务并保管有写权限的 token，与本仓库「纯静态、零后端」的定位冲突，故未采用。
+因此**没有任何国内节点可以承载 issue 表单与登录流程**：它们只转发文件路径，HTML 页面一律 403/404，而 `issues/new` 本身需要 GitHub 会话。`ghproxy.net` 已跳转垃圾站点，已从 `GITHUB_MIRRORS` 中移除。
+若确实需要在国内直接收集反馈，两条可行路线：自建中转（Cloudflare Worker 或国内云函数 + GitHub Token 代发 issue，代价是维护服务并保管写权限 token），或在 Gitee 建一个反馈仓并把地址填进 `FALLBACK_FEEDBACK_URL`（零后端，国内可直达，但反馈落在 Gitee 而非 GitHub issue）。
 
 ### 相关配置（`src/data/site.ts`）
 
 | 常量 | 作用 |
 | --- | --- |
-| `GITHUB_FILE_MIRRORS` | 页面在连不上 GitHub 时列出的下载加速前缀，可自行增删 |
-| `FALLBACK_FEEDBACK_URL` / `FALLBACK_FEEDBACK_LABEL` | 国内备用反馈渠道（问卷、表单等）；**留空则不显示该入口** |
+| `GITHUB_MIRRORS` | 参与自动测试的加速节点（`id` / `label` / `prefix`），可自行增删 |
+| `MIRROR_PROBE_RAW` | 测速与校验用的公开文件，换仓库时同步修改 |
+| `REPO_ARCHIVE` / `REPO_README_RAW` | 会被套上选定节点的资源链接 |
+| `FALLBACK_FEEDBACK_URL` / `FALLBACK_FEEDBACK_LABEL` | 国内备用反馈渠道（问卷、表单、Gitee 仓等）；**留空则不显示该入口** |
 | `SITE_MIRROR_URL` | 本站的国内镜像地址（例如另建的 Gitee Pages / Cloudflare Pages）；留空则不显示 |
 
 填好后跑一次 `npm run build` 即可，无需改动组件代码。
