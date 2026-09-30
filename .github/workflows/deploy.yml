@@ -1,0 +1,81 @@
+# 伙伴物语 / Partner Monogatari —— GitHub Pages 自动部署
+#
+# 作用：把仓库里的 Vite + React + Tailwind 静态站点构建后发布到 GitHub Pages。
+# 触发：向 main 分支推送（不做 paths 过滤，任何改动都会重新构建），或手动触发。
+# 前置：仓库 Settings → Pages → Source 需要选择 "GitHub Actions"。
+
+name: Deploy site to GitHub Pages
+
+on:
+  # 推送到 main 分支即触发部署（不限路径）
+  push:
+    branches:
+      - main
+  # 支持在 Actions 页面手动触发，便于排查部署问题
+  workflow_dispatch:
+
+# 最小权限：读代码、写 Pages、用 OIDC 令牌换取部署权限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时间只允许一个 Pages 部署；不打断正在进行的部署，避免线上出现半成品站点
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  # ---------- 构建 ----------
+  build:
+    name: 构建站点产物
+    runs-on: ubuntu-latest
+    steps:
+      # 拉取仓库代码
+      - name: 检出仓库代码
+        uses: actions/checkout@v7
+
+      # 安装 Node.js 22，并按 package-lock.json 启用 npm 依赖缓存
+      - name: 安装 Node.js 22 并启用 npm 缓存
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      # 严格按 lockfile 安装依赖，保证 CI 与本地一致
+      - name: 安装依赖（npm ci）
+        run: npm ci
+
+      # 执行项目构建脚本（tsc --noEmit && vite build），产物输出到 dist/
+      - name: 构建站点（npm run build）
+        run: npm run build
+
+      # 部署前校验：构建产物入口必须存在，否则直接让这一步失败
+      - name: 校验构建产物存在
+        shell: bash
+        run: test -f dist/index.html
+
+      # 读取仓库的 Pages 配置（如 base path），供后续步骤使用
+      - name: 配置 Pages
+        uses: actions/configure-pages@v6
+
+      # 把 dist/ 打包成 Pages 制品，供 deploy 作业使用
+      - name: 上传 Pages 制品（dist/）
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: ./dist
+
+  # ---------- 部署 ----------
+  deploy:
+    name: 发布到 GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    # 关联 github-pages 环境；站点地址取自部署步骤的输出
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # 取出 build 上传的制品并发布，页面地址写入 steps.deployment.outputs.page_url
+      - name: 部署到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

@@ -1,0 +1,114 @@
+# 伙伴物语 / Partner Monogatari —— 功能建议（Issue Form）
+#
+# 适用范围：新功能、玩法改进、体验优化、文档与文案建议。
+# 提问 / 玩法交流请走 Discussions；「希望支持其它 MC 版本」这类超出当前范围的需求请先看站点说明。
+#
+# 维护提示：labels 必须已经存在于本仓库，否则 GitHub 会忽略该标签。
+
+name: ✨ 功能建议
+description: 提出新功能、玩法改进、体验优化或文档建议
+title: "[建议] "
+labels: ["enhancement", "needs-triage"]
+body:
+  # ---------- 提交前自检 ----------
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: 提交前自检
+      description: 请逐条确认后再提交；未确认的条目会让 issue 被直接关闭而浪费双方时间。
+      options:
+        - label: 已搜索过现有 issue（含已关闭的），并确认没有重复建议
+          required: true
+        - label: 这个建议不是「希望支持其它 MC 版本」这类超出范围的需求
+          required: true
+    validations:
+      required: true
+
+  # ---------- 模块定位 ----------
+  - type: dropdown
+    id: module
+    attributes:
+      label: 涉及模块
+      description: 这个建议应该落在哪个模块里？不确定就选最后一项。
+      options:
+        - ShotaPartner-Core（游戏本体：伙伴/技能/战斗/物品/方块）
+        - ShotaPartner-API（公共前置 API）
+        - ShotaPartner-Extra-School（学校维度追加包）
+        - 不确定 / 与多个模块都有关
+    validations:
+      required: true
+
+  # ---------- 问题与方案 ----------
+  - type: markdown
+    attributes:
+      value: |
+        ## 问题与方案
+
+        先说清楚「遇到了什么问题」，再说「想怎么改」——这样我们才能判断有没有更好的实现方式。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 想解决的问题
+      description: 描述你遇到的实际困难或体验上的不足，不需要在这里给出实现方案。
+      placeholder: 例如：伙伴数量多了以后，每次都要手动一个个切换，操作很繁琐。
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望的方案
+      description: 你希望新增或改动什么？越具体越好（快捷键、界面位置、数值范围等）。
+      placeholder: 例如：增加一个伙伴快捷轮盘，按住某键选择后直接指挥。
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 考虑过的替代方案
+      description: 你试过哪些绕开这个问题的办法？为什么不够用？
+    validations:
+      required: false
+
+  - type: dropdown
+    id: breaking
+    attributes:
+      label: 是否可能影响兼容性
+      description: 如果你不确定，选「不确定」即可，我们会自己评估。
+      options:
+        - 不会
+        - 会改动公开 API 契约
+        - 会改动存档或注册名
+        - 不确定
+    validations:
+      required: true
+
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: 你愿意参与吗
+      description: 愿意提 PR 或帮忙测试会显著提高这个建议落地的概率。
+      options:
+        - 愿意提 PR
+        - 愿意帮忙测试
+        - 只提建议
+    validations:
+      required: true
+
+  - type: textarea
+    id: reference
+    attributes:
+      label: 参考
+      description: 其它模组、视频、Wiki 或截图里已有的实现，可以贴链接。
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 补充说明
+      description: 任何上面没问到、但你觉得可能有帮助的信息。
+    validations:
+      required: false

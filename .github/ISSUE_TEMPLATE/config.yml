@@ -1,0 +1,23 @@
+# 伙伴物语 / Partner Monogatari —— Issue 模板总配置
+#
+# 注意事项（维护者请先读）：
+#   1. 本文件位于仓库的 .github/ 目录下，属于「仓库级模板」，会整体覆盖组织级（Paltrow-Studio/.github）
+#      的同名模板。也就是说：本仓库的模板一旦存在，组织级 Issue 模板就不会再生效；
+#      若希望某些模板沿用组织级，需要把对应文件删掉或在这里显式补齐。
+#   2. contact_links 与各 Issue Form 里用到的 labels（bug / crash / compatibility / enhancement / needs-triage）
+#      必须已经存在于本仓库（标签不存在时 GitHub 会静默忽略，不会报错）。
+#   3. 关闭 blank issue 是有意为之：issue 区只处理可复现的缺陷与需求，支持类提问请走 Discussions。
+#   4. 三个模组仓库（ShotaPartner-Core / ShotaPartner-API / ShotaPartner-Extra-School）目前是私有的，
+#      玩家的公开反馈统一提交到本 Docs 仓库。
+
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 站点：功能介绍与安装说明
+    url: https://paltrow-studio.github.io/ShotaPartner-Docs/
+    about: 三个模块各自负责什么、需要哪些前置、常见问题，先看这里
+  - name: 📘 仓库说明（README）
+    url: https://github.com/Paltrow-Studio/ShotaPartner-Docs/blob/main/README.md
+    about: 反馈流程、日志怎么给、哪些信息必须提供
+  - name: 💬 讨论区：提问 / 玩法交流 / 不确定是不是 bug
+    url: https://github.com/Paltrow-Studio/ShotaPartner-Docs/discussions
+    about: 支持类提问请走 Discussions —— issue 区只处理可复现的缺陷与需求
