@@ -14,8 +14,7 @@
       content="Minecraft 1.20.1 Forge 模组《伙伴物语》玩法说明：伙伴获取与养成、技能与轮盘、战斗 AI、工作与后勤、坟墓复活、学校维度，以及问题反馈入口。"
     />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#f3eee2" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#191713" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f3eee2" />
     <meta name="keywords" content="伙伴物语, Partner Monogatari, Minecraft, Forge, 1.20.1, 模组玩法, 问题反馈" />
     <link rel="canonical" href="https://paltrow-studio.github.io/ShotaPartner-Docs/" />
 
@@ -34,20 +33,40 @@
     <meta name="twitter:card" content="summary_large_image" />
 
     <script>
-      // 主题在首屏绘制前定好，避免白闪 / 黑闪。localStorage 优先，其次跟系统。
+      // 主题在首屏绘制前定好，避免白闪 / 黑闪。
+      // 优先级：localStorage 中用户显式选择 > 按国内时间（Asia/Shanghai）判定的默认值。
+      // 时段与 src/lib/theme.ts 的 DAY_START_HOUR / DAY_END_HOUR 必须一致：06:00~17:59 日间，其余夜间。
       ;(function () {
+        var COLORS = { light: '#f3eee2', dark: '#191713' }
+        function chinaHour() {
+          try {
+            var parts = new Intl.DateTimeFormat('en-US', {
+              timeZone: 'Asia/Shanghai',
+              hour: '2-digit',
+              hour12: false,
+            }).formatToParts(new Date())
+            for (var i = 0; i < parts.length; i++) {
+              if (parts[i].type === 'hour') return Number(parts[i].value) % 24
+            }
+          } catch (e) {
+            /* 缺少时区数据时用固定偏移 */
+          }
+          return (new Date().getUTCHours() + 8) % 24
+        }
+        var theme
         try {
           var saved = localStorage.getItem('sp-theme')
-          var theme =
-            saved === 'light' || saved === 'dark'
-              ? saved
-              : window.matchMedia('(prefers-color-scheme: dark)').matches
-                ? 'dark'
-                : 'light'
-          document.documentElement.dataset.theme = theme
+          if (saved === 'light' || saved === 'dark') theme = saved
         } catch (e) {
-          document.documentElement.dataset.theme = 'light'
+          /* 隐私模式下读不到，按时间判定 */
         }
+        if (!theme) {
+          var hour = chinaHour()
+          theme = hour >= 6 && hour < 18 ? 'light' : 'dark'
+        }
+        document.documentElement.dataset.theme = theme
+        var meta = document.querySelector('meta[name="theme-color"]')
+        if (meta) meta.setAttribute('content', COLORS[theme])
       })()
     </script>
   </head>

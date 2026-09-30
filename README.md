@@ -93,6 +93,7 @@ relay/
 | 反馈中继地址、国内备用入口 | `src/data/site.ts`（`FEEDBACK_RELAY_URL` / `FALLBACK_FEEDBACK_URL` / `SITE_MIRROR_URL`） |
 | 反馈中继服务 | `relay/`（部署与安全说明见 `relay/README.md`） |
 | 配色、纸面质感、字体 | `src/index.css`（`:root` 与 `[data-theme='dark']` 两套变量） |
+| 主题默认时段（按国内时间自动切换） | `src/lib/theme.ts` 的 `DAY_START_HOUR` / `DAY_END_HOUR`，与 `index.html` 内联脚本两处同步 |
 | 站点图标 / 分享图 | `scripts/make-icons.py` 重新生成，见下节 |
 | 内容门禁（禁止收录的角色与内容） | `scripts/check-content.mjs`，见「内容门禁」一节 |
 
@@ -129,6 +130,21 @@ python3 scripts/make-icons.py --check  # 只校验尺寸与不透明度
    玩法说明与问题反馈」与版本信息，右下角站点地址。
 
 需要换 logo 时：替换 `assets/brand/` 下的源图，跑一次脚本并 `npm run build` 即可，文件清单无需改动。
+
+## 主题（日间 / 夜间）
+
+默认主题按**国内时间**（`Asia/Shanghai`，与访客所在时区无关）判定：
+
+| 国内时间 | 默认主题 |
+| --- | --- |
+| 06:00 ~ 17:59 | 日间（浅色） |
+| 18:00 ~ 05:59 | 夜间（深色） |
+
+- 判定在**首屏绘制之前**完成：`index.html` 的内联脚本把结果写进 `<html data-theme>`，因此不会出现白闪或黑闪。
+- 用户点过导航栏的「日」/「夜」之后，选择写入 `localStorage` 的 `sp-theme`，此后**不再随时间自动改变**，重访也保持该选择。
+- 没有做过选择时，页面长时间开着会每 10 分钟重算一次，跨过 06:00 或 18:00 自动切换；默认值**不会**被写进 `localStorage`，否则第一次访问就会把默认值变成用户选择。
+- 移动端浏览器界面配色（`theme-color`）跟随实际主题，不再跟随系统配色。
+- 时段常量在 `src/lib/theme.ts`（`DAY_START_HOUR` / `DAY_END_HOUR`），`index.html` 内联脚本里有一份等价实现（内联脚本无法 `import` 模块），**改时段必须同时改这两处**。
 
 ## 内容门禁
 
