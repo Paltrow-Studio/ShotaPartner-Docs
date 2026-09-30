@@ -11,8 +11,8 @@ export function Footer() {
               Partner Monogatari
             </p>
             <p className="mt-3 text-[0.84rem] leading-relaxed text-ink-soft">
-              模组由 Paltrow Studio 开发。三个模组仓库暂未公开源码，但这一页所在的仓库对所有人开放，
-              遇到问题可以在这边提。
+              模组由 Paltrow Studio 开发。三个模组仓库暂未公开源码，本页所在仓库对所有人开放，
+              问题可在此提交。
             </p>
           </div>
 

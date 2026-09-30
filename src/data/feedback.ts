@@ -3,7 +3,7 @@
  *
  * 静态站点没有后端，所以走 GitHub 官方的 issue 表单深链：
  * issues/new?template=…&title=…&labels=… 把问题类型和涉及模块预填进去，
- * 玩家在 GitHub 上点提交就行。
+ * 玩家在 GitHub 上完成提交。
  */
 
 import { ISSUES_NEW } from './site'
@@ -27,8 +27,8 @@ export const issueTypes: IssueType[] = [
     id: 'bug',
     template: 'bug_report.yml',
     name: '缺陷报告',
-    desc: '游戏能进，但某个功能不对劲：数值不对、逻辑异常、界面错位、点了没反应。',
-    when: '能玩，但某处不对',
+    desc: '游戏可以进入，但某项功能表现异常：数值不符、逻辑错误、界面错位、操作无响应。',
+    when: '可以游玩，但存在异常',
     titlePrefix: '[Bug]',
     labels: 'bug,needs-triage',
   },
@@ -36,8 +36,8 @@ export const issueTypes: IssueType[] = [
     id: 'crash',
     template: 'crash_report.yml',
     name: '崩溃与启动失败',
-    desc: '崩溃、打不开、卡在加载界面、一进世界就退出。',
-    when: '进不去，或者直接崩',
+    desc: '崩溃、无法启动、卡在加载界面、进入世界后立即退出。',
+    when: '无法进入或直接崩溃',
     titlePrefix: '[崩溃]',
     labels: 'crash,needs-triage',
   },
@@ -45,8 +45,8 @@ export const issueTypes: IssueType[] = [
     id: 'compatibility',
     template: 'compatibility.yml',
     name: '兼容性 / 服务端 / 整合包',
-    desc: '加上别的模组或放进整合包才出问题、专用服务端上表现不对、学校维度缺方块。',
-    when: '单装没事，加了东西就出问题',
+    desc: '与其它模组组合或放入整合包后出现问题、专用服务端表现异常、学校维度缺少方块。',
+    when: '单独安装正常，加入其它内容后异常',
     titlePrefix: '[兼容]',
     labels: 'compatibility,needs-triage',
   },
@@ -54,8 +54,8 @@ export const issueTypes: IssueType[] = [
     id: 'feature',
     template: 'feature_request.yml',
     name: '功能建议',
-    desc: '想加的功能、想改的手感与数值、想改的界面提示。',
-    when: '有想法要提',
+    desc: '希望新增的功能、需要调整的手感与数值、需要改进的界面提示。',
+    when: '需要提交功能想法',
     titlePrefix: '[建议]',
     labels: 'enhancement,needs-triage',
   },
@@ -106,25 +106,25 @@ export function buildIssueUrl(type: IssueType, moduleId: ModuleId | 'unknown'): 
 export const reportChecklist: { title: string; desc: string }[] = [
   {
     title: '完整的模组列表',
-    desc: 'mods 目录里所有 jar 的文件名；用整合包的话写整合包名称与版本。',
+    desc: 'mods 目录下所有 jar 的文件名；使用整合包时写明整合包名称与版本。',
   },
   {
     title: '复现步骤',
-    desc: '照着做就能重现的步骤。不确定是不是每次都出现，也请写清楚。',
+    desc: '按步骤可以复现问题。若不确定是否必然出现，请一并说明。',
   },
   {
     title: '日志链接',
-    desc: '完整日志传到 mclo.gs 或 Gist，issue 里只贴相关的那几十行。',
+    desc: '完整日志上传至 mclo.gs 或 Gist，issue 中仅粘贴相关的数十行。',
   },
   {
     title: '截图或录屏',
-    desc: '界面错位、渲染异常、学校缺装饰这类问题，附图会快很多。',
+    desc: '界面错位、渲染异常、学校缺少装饰这类问题，附图可显著缩短定位时间。',
   },
 ]
 
 export const reportAntiPatterns: string[] = [
-  '整篇 latest.log 不要往 issue 里贴，给链接就行。',
-  '提之前先搜一遍（含已关闭的 issue），同类问题在原帖里跟进。',
-  '怎么装、怎么玩这类问题发讨论区，issue 区留给能复现的问题和建议。',
-  'issue 是公开的，别贴服务器地址、联系方式这类信息。',
+  '整份 latest.log 不要粘贴到 issue 中，提供链接即可。',
+  '提交前先搜索已有 issue（含已关闭的），同类问题在原帖下跟进。',
+  '如何安装、如何游玩这类问题请发至讨论区，issue 区用于可复现的问题与具体建议。',
+  'issue 内容公开，请勿包含服务器地址、联系方式等个人信息。',
 ]

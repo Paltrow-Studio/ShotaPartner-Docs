@@ -4,7 +4,7 @@
  * 数据来源：ShotaPartner-Core 的 partner/character/CharacterProfiles.java（角色 id 与中文名）
  * 与 PartnerInitialStatsTable.java（六项初始训练值）。显示用的四项基础数值
  * （生命 20 / 攻击 2 / 防御 2 / 速度 0.25）在 27 位角色上完全相同，
- * 真正的差别在下面六项训练值上，所以表里只列这六项。
+ * 实际差异体现在下列六项训练值，表格仅列出这六项。
  */
 
 export type StatKey = 'attack' | 'defense' | 'health' | 'work' | 'haste' | 'proficiency'

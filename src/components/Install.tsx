@@ -3,16 +3,16 @@ import { Sheet } from './paper'
 import { Reveal } from './Reveal'
 
 const requirements = [
-  { label: 'Minecraft', value: '1.20.1', note: '只支持这一个版本' },
-  { label: 'Forge', value: '47.x', note: '开发基准 47.4.23' },
-  { label: 'Java', value: '17', note: 'JDK 21 会让 Forge 工具链出问题' },
-  { label: 'GeckoLib', value: '4.8.x', note: '只有本体需要，学校包不用装' },
+  { label: 'Minecraft', value: '1.20.1', note: '仅支持该版本' },
+  { label: 'Forge', value: '47.x', note: '开发基准为 47.4.23' },
+  { label: 'Java', value: '17', note: 'JDK 21 会导致 Forge 工具链异常' },
+  { label: 'GeckoLib', value: '4.8.x', note: '仅本体需要，学校包无需安装' },
 ]
 
 const steps = [
-  '先放前置 `shota_partner_api`，再放本体 `shota_partner`。本体还依赖 GeckoLib 4.8.x，一起放进 mods。',
-  '要玩学校就再放 `shota_partner_extra_school`。它不依赖本体，可以单独装、单独升级。',
-  '进游戏后在 Mods 列表里确认三个 jar 的 modId 与版本，报问题时把这几行抄下来。',
+  '先放入前置 `shota_partner_api`，再放入本体 `shota_partner`。本体另需 GeckoLib 4.8.x，一并放入 mods 目录。',
+  '如需学校内容，再放入 `shota_partner_extra_school`。该包不依赖本体，可单独安装与升级。',
+  '进入游戏后，在 Mods 列表中确认三个 jar 的 modId 与版本；提交问题时请一并提供这几行信息。',
 ]
 
 export function Install() {
@@ -24,8 +24,8 @@ export function Install() {
       </div>
       <h2 className="mt-3 text-2xl sm:text-[1.7rem]">装之前要确认的事</h2>
       <p className="mt-2 max-w-3xl text-[0.95rem] text-ink-soft">
-        前置关系写在每个 jar 自己的 mods.toml 里。缺前置或版本对不上时，游戏会在启动阶段直接报错，
-        不会等到进存档才出问题。
+        前置关系写在每个 jar 自身的 mods.toml 中。缺少前置或版本不符时，游戏会在启动阶段直接报错，
+        不会延迟到进入存档后才出现。
       </p>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -54,8 +54,8 @@ export function Install() {
             </ol>
             <p className="mt-5 border-l-2 border-l-seal/60 bg-paper-sunk/70 py-3 pl-4 text-[0.86rem] leading-relaxed text-ink-soft">
               <span className="mr-1 text-seal">※</span>
-              三个模组仓库还没公开，这一页不放下载跳转。请以官方发布帖或整合包里的版本为准，
-              安装前对一下下面这张表里的版本。
+              三个模组仓库尚未公开，本页不提供下载跳转。请以官方发布帖或整合包内的版本为准，
+              安装前对照下表核对版本。
             </p>
           </div>
         </Reveal>

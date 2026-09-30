@@ -25,7 +25,7 @@ export const moduleSummaries: ModuleSummary[] = [
     role: '前置 API',
     needs: ['Forge 47.4.23', 'Minecraft 1.20.1'],
     optional: [],
-    note: '只有接口和共用逻辑，不注册任何游戏内容。本体和学校包都要装它，加载顺序排在它们前面。',
+    note: '仅包含接口与共用逻辑，不注册任何游戏内容。本体与学校包均需安装，加载顺序在其之前。',
   },
   {
     id: 'core',
@@ -34,7 +34,7 @@ export const moduleSummaries: ModuleSummary[] = [
     role: '游戏本体',
     needs: ['ShotaPartner-API [1.0,2)', 'GeckoLib [4.8,5)', 'Forge 47.4.23', 'Minecraft 1.20.1'],
     optional: ['TACZ 枪械', 'Patchouli 手册', '机械动力 Create', 'PlayerAnimator'],
-    note: '伙伴、技能、战斗、工作、方块与物品都在这个 jar 里。modId 与拆分前一致，旧存档继续能用。',
+    note: '伙伴、技能、战斗、工作、方块与物品均位于该 jar。modId 与拆分前一致，旧存档可继续使用。',
   },
   {
     id: 'school',
@@ -57,6 +57,6 @@ export const moduleSummaries: ModuleSummary[] = [
       'kaleidoscope_cookery',
       'ywzj_midi',
     ],
-    note: '学校维度、建筑模板与十二位学生。只依赖前置 API，不需要本体，也不需要 GeckoLib。',
+    note: '学校维度、建筑模板与十二位学生。仅依赖前置 API，不需要本体，也不需要 GeckoLib。',
   },
 ]

@@ -59,7 +59,7 @@ export function Faq() {
 
       <Reveal className="mt-6">
         <div className="flex flex-wrap items-center justify-between gap-4 border-l-2 border-l-line-strong bg-paper-sunk/60 py-3 pl-4 pr-4 text-[0.88rem] text-ink-soft">
-          <p>上面没写到你的情况：怎么玩、怎么装这类问题请发讨论区；能复现的问题和建议提到 issue。</p>
+          <p>以上未涵盖的问题：安装与玩法类疑问请发至讨论区；可复现的问题与具体建议请提交至 issue。</p>
           <div className="flex flex-wrap gap-x-5">
             <a href={DISCUSSIONS} target="_blank" rel="noreferrer noopener" className="link-quiet">
               讨论区

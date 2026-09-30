@@ -40,17 +40,17 @@ export function Feedback() {
         <span className="chapter-mark">反馈</span>
         <span className="h-px flex-1 bg-line" />
       </div>
-      <h2 className="mt-3 text-2xl sm:text-[1.7rem]">遇到问题，在这里提</h2>
+      <h2 className="mt-3 text-2xl sm:text-[1.7rem]">问题反馈</h2>
       <p className="mt-2 max-w-3xl text-[0.95rem] text-ink-soft">
-        三个模组仓库没有公开，所以玩家的反馈都提到这一页所在的仓库里，issue 区对所有人可见。
-        下面选一下问题类型和涉及的模块，标题与标签会帮你填好，剩下在 GitHub 上提交即可。
+        三个模组仓库未公开，玩家反馈统一提交至本页所在仓库，issue 区对所有人可见。
+        在下方选择问题类型与涉及的模块，表单的标题与标签会自动预填，其余内容在 GitHub 上补齐后提交。
       </p>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.15fr_1fr]">
         <Reveal>
           <Sheet className="p-5 sm:p-6">
             <p className="chapter-mark">一</p>
-            <h3 className="mt-1 text-[1rem] font-semibold text-ink">问题是哪一类</h3>
+            <h3 className="mt-1 text-[1rem] font-semibold text-ink">问题类型</h3>
             <ul className="mt-3 divide-y divide-dashed divide-line border-y border-dashed border-line">
               {issueTypes.map((item) => {
                 const selected = item.id === typeId
@@ -85,7 +85,7 @@ export function Feedback() {
             </ul>
 
             <p className="chapter-mark mt-7">二</p>
-            <h3 className="mt-1 text-[1rem] font-semibold text-ink">出在哪个部分</h3>
+            <h3 className="mt-1 text-[1rem] font-semibold text-ink">涉及模块</h3>
             <div className="mt-3 flex flex-wrap gap-2">
               {moduleOptions.map((item) => (
                 <button
@@ -105,7 +105,7 @@ export function Feedback() {
             </div>
 
             <p className="chapter-mark mt-7">三</p>
-            <h3 className="mt-1 text-[1rem] font-semibold text-ink">打开表单</h3>
+            <h3 className="mt-1 text-[1rem] font-semibold text-ink">表单预填内容</h3>
             <div className="mt-3 rounded-md border border-dashed border-line bg-paper-sunk/60 p-4">
               <dl className="space-y-2 text-[0.85rem]">
                 <div className="flex flex-wrap items-baseline gap-2">
@@ -132,7 +132,7 @@ export function Feedback() {
                 </div>
               </dl>
               <p className="mt-3 border-t border-dashed border-line pt-3 text-[0.82rem] text-ink-faint">
-                打开表单后，把「涉及模块」这一项选成「{option.formOption}」，其余必填项按提示补齐。
+                打开表单后，将「涉及模块」一项选为「{option.formOption}」，其余必填项按提示补齐。
               </p>
             </div>
 
@@ -154,12 +154,12 @@ export function Feedback() {
                 rel="noreferrer noopener"
                 className="link-quiet text-ink-soft"
               >
-                先搜同类 issue
+                搜索同类 issue
               </a>
             </div>
 
             <p className="mt-4 text-[0.8rem] text-ink-faint">
-              提交需要 GitHub 账号。不方便注册的话，也可以在官方发布帖或玩家群里反馈。
+              提交需要 GitHub 账号。无法注册账号时，也可通过官方发布帖或玩家群反馈。
             </p>
           </Sheet>
         </Reveal>
@@ -167,7 +167,7 @@ export function Feedback() {
         <div className="space-y-6">
           <Reveal delay={60}>
             <Sheet className="p-5 sm:p-6">
-              <h3 className="text-[1rem] font-semibold text-ink">提之前先准备</h3>
+              <h3 className="text-[1rem] font-semibold text-ink">提交前需准备的信息</h3>
               <ol className="mt-3 space-y-3">
                 {reportChecklist.map((item, index) => (
                   <li key={item.title} className="flex gap-3 text-[0.88rem]">
@@ -184,7 +184,7 @@ export function Feedback() {
 
           <Reveal delay={110}>
             <Sheet className="p-5 sm:p-6">
-              <h3 className="text-[1rem] font-semibold text-ink">这几种情况会被直接关掉</h3>
+              <h3 className="text-[1rem] font-semibold text-ink">不予受理的情况</h3>
               <ul className="mt-3 space-y-2">
                 {reportAntiPatterns.map((item) => (
                   <li key={item} className="flex gap-2.5 text-[0.88rem] leading-relaxed text-ink-soft">
@@ -198,7 +198,7 @@ export function Feedback() {
 
           <Reveal delay={150}>
             <Sheet className="p-5 sm:p-6">
-              <h3 className="text-[1rem] font-semibold text-ink">直达</h3>
+              <h3 className="text-[1rem] font-semibold text-ink">直达链接</h3>
               <ul className="mt-3 space-y-1.5 text-[0.88rem]">
                 {issueTypes.map((item) => (
                   <li key={item.id}>
@@ -224,7 +224,7 @@ export function Feedback() {
                     rel="noreferrer noopener"
                     className="link-quiet text-ink-soft"
                   >
-                    讨论区（提问、闲聊）
+                    讨论区（提问与交流）
                   </a>
                 </li>
                 <li>
