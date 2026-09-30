@@ -12,11 +12,13 @@ import {
   DISCUSSIONS,
   FALLBACK_FEEDBACK_LABEL,
   FALLBACK_FEEDBACK_URL,
-  GITHUB_FILE_MIRRORS,
   GITHUB_REPO,
   ISSUES,
+  REPO_ARCHIVE,
+  REPO_README_RAW,
   SITE_MIRROR_URL,
 } from '../data/site'
+import { accelerated, useAccelerator } from '../lib/accelerator'
 import { useGithubReach } from '../lib/reach'
 import type { ModuleId } from '../data/modules'
 import { Sheet } from './paper'
@@ -29,6 +31,12 @@ const reachText: Record<string, string> = {
   blocked: '无法连接 github.com（被拦截或超时）。',
 }
 
+const nodeText: Record<string, string> = {
+  checking: '计时中',
+  ok: '可用',
+  fail: '不可用',
+}
+
 export function Feedback() {
   const [typeId, setTypeId] = useState<IssueTypeId>('bug')
   const [moduleId, setModuleId] = useState<ModuleId | 'unknown'>('core')
@@ -38,6 +46,7 @@ export function Feedback() {
   const sectionRef = useRef<HTMLElement | null>(null)
   const manualRef = useRef<HTMLTextAreaElement | null>(null)
   const { state: reach, check: checkReach } = useGithubReach()
+  const { rows: nodes, phase: nodePhase, best: bestNode, check: checkNodes } = useAccelerator()
 
   const type = useMemo(() => issueTypes.find((t) => t.id === typeId)!, [typeId])
   const option = useMemo(() => moduleOptions.find((m) => m.id === moduleId) ?? moduleOptions[3], [moduleId])
@@ -52,6 +61,7 @@ export function Feedback() {
     if (!el) return
     if (typeof IntersectionObserver === 'undefined') {
       void checkReach()
+      void checkNodes()
       return
     }
     const observer = new IntersectionObserver(
@@ -59,13 +69,14 @@ export function Feedback() {
         if (entries.some((entry) => entry.isIntersecting)) {
           observer.disconnect()
           void checkReach()
+          void checkNodes()
         }
       },
       { rootMargin: '240px' },
     )
     observer.observe(el)
     return () => observer.disconnect()
-  }, [checkReach])
+  }, [checkReach, checkNodes])
 
   const copyReport = async () => {
     const text = buildReportText(type, moduleId)
@@ -135,11 +146,70 @@ export function Feedback() {
               >
                 {reachText[reach]}
               </span>
-              <button type="button" onClick={() => void checkReach()} className="link-quiet text-ink-soft">
+              <button
+                type="button"
+                onClick={() => {
+                  void checkReach()
+                  void checkNodes()
+                }}
+                className="link-quiet text-ink-soft"
+              >
                 重新检测
               </button>
             </div>
           </div>
+
+          <div className="mt-3 border-t border-dashed border-line pt-3 text-[0.84rem] leading-relaxed text-ink-soft">
+            <p>
+              <span className="text-ink">资源线路自动测试</span>
+              {nodePhase === 'idle' ? '：本区进入视口后自动开始。' : null}
+              {nodePhase === 'testing'
+                ? '：正在用你当前的网络逐个节点下载同一个文件并计时，单节点最长 8 秒。'
+                : null}
+              {nodePhase === 'done' && bestNode
+                ? `：实测最快为 ${bestNode.label}（${bestNode.ms} ms），已自动用于下面的资源链接。`
+                : null}
+              {nodePhase === 'done' && !bestNode ? '：全部节点不可用，资源链接保持直连。' : null}
+            </p>
+            {nodePhase === 'done' ? (
+              <>
+                <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[0.8rem]">
+                  {nodes.map((node) => (
+                    <li key={node.id} className={node.state === 'ok' ? 'text-ink' : 'text-ink-faint'}>
+                      {node.state === 'ok'
+                        ? `${node.label} ${node.ms} ms`
+                        : `${node.label} ${nodeText[node.state]}${node.note ? `（${node.note}）` : ''}`}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2">
+                  节点只转发 raw、archive 与 release 一类文件路径。仓库页、issue 页与登录页属于
+                  HTML 页面，节点一律返回 403 或 404，因此
+                  <span className="text-ink">表单提交无法经节点完成</span>。
+                </p>
+                <p className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                  <a
+                    href={accelerated(bestNode?.prefix ?? '', REPO_ARCHIVE)}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="link-quiet"
+                  >
+                    下载本站源码 zip
+                  </a>
+                  <a
+                    href={accelerated(bestNode?.prefix ?? '', REPO_README_RAW)}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="link-quiet"
+                  >
+                    查看 README（raw）
+                  </a>
+                  <span className="text-ink-faint">当前线路：{bestNode ? bestNode.label : '直连'}</span>
+                </p>
+              </>
+            ) : null}
+          </div>
+
           <hr className="rule my-3" />
           <p className="text-[0.86rem] leading-relaxed text-ink-soft">
             下列内容与表单字段一一对应，可直接粘进表单；GitHub 无法打开时，也可复制或下载后发送给维护者。
@@ -189,23 +259,10 @@ export function Feedback() {
           {reach === 'blocked' ? (
             <div className="mt-4 border-l-2 border-l-seal/60 bg-paper-sunk/70 py-3 pl-4 pr-3 text-[0.86rem] leading-relaxed text-ink-soft">
               <p>
-                issue 表单需要在 github.com 登录后填写；国内的文件加速镜像只能转发 Releases / Raw
-                这类文件路径，<span className="text-ink">无法代理表单与登录页</span>。
-                可先复制或下载上面的反馈内容，再通过可用的网络环境、官方发布帖或玩家群提交。
+                当前网络无法打开 github.com，而 issue 表单需要在 github.com 登录后填写。上面的自动测试已按你的
+                网络挑出可用的资源线路，但资源线路无法承载表单与登录页。请先复制或下载反馈内容，再通过可用的
+                网络环境、官方发布帖或玩家群提交。
               </p>
-              <details className="mt-2">
-                <summary className="cursor-pointer text-ink">
-                  可用的 GitHub 文件加速镜像（仅用于下载）
-                </summary>
-                <ul className="mt-2 space-y-1">
-                  {GITHUB_FILE_MIRRORS.map((mirror) => (
-                    <li key={mirror.prefix}>
-                      <code>{mirror.prefix}https://github.com/…</code>
-                      <span className="ml-2 text-[0.8rem] text-ink-faint">{mirror.label}</span>
-                    </li>
-                  ))}
-                </ul>
-              </details>
             </div>
           ) : null}
         </Sheet>
