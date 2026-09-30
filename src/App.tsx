@@ -51,7 +51,7 @@ function BackToTop() {
 }
 
 const extraSections = [
-  { id: 'reference', title: '按键、命令、东西' },
+  { id: 'reference', title: '按键与物品' },
   { id: 'install', title: '装之前要确认的事' },
   { id: 'faq', title: '常被问到的几件事' },
   { id: 'feedback', title: '遇到问题，在这里提' },

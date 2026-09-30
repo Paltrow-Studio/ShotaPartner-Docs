@@ -48,9 +48,9 @@ export function Reference() {
         <span className="chapter-mark">速查</span>
         <span className="h-px flex-1 bg-line" />
       </div>
-      <h2 className="mt-3 text-2xl sm:text-[1.7rem]">按键、命令、东西</h2>
+      <h2 className="mt-3 text-2xl sm:text-[1.7rem]">按键与物品</h2>
       <p className="mt-2 max-w-3xl text-[0.95rem] text-ink-soft">
-        玩之前先记这四个键就够了。命令多数要 OP，主要给服务器管理员用。
+        玩之前先记这四个键就够了。下面是合成、物品、方块与状态效果的速查。
       </p>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -85,14 +85,6 @@ export function Reference() {
         </div>
         <p className="mt-3 text-[0.82rem] leading-relaxed text-ink-faint">
           <RichText text={recipeNote} />
-        </p>
-      </Reveal>
-
-      <Reveal className="mt-8">
-        <h3 className="text-[1rem] font-semibold text-ink">命令</h3>
-        <div className="mt-3 space-y-6">
-        </div>
-        <p className="mt-4 text-[0.82rem] leading-relaxed text-ink-faint">
         </p>
       </Reveal>
 
