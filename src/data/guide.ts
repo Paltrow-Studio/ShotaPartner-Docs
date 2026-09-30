@@ -205,7 +205,7 @@ export const chapters: Chapter[] = [
     id: 'combat',
     mark: '四',
     title: '战斗行为',
-    lede: '伙伴自动索敌并按距离切换武器；需要玩家设置的是它对中立生物与护卫行为的态度。',
+    lede: '伙伴自动索敌并按距离切换武器；是否攻击中立生物与是否主动护卫需要玩家设置。',
     blocks: [
       {
         kind: 'p',
@@ -267,7 +267,7 @@ export const chapters: Chapter[] = [
     id: 'work',
     mark: '五',
     title: '工作系统',
-    lede: '共五种工作，各自对工具或材料有不同要求。',
+    lede: '共五种工作，各自对工具或材料的要求不同。',
     blocks: [
       {
         kind: 'p',
@@ -296,7 +296,7 @@ export const chapters: Chapter[] = [
       },
       {
         kind: 'p',
-        text: '工作产出与效率与「工作速度」训练值相关，将该训练值作为加点方向可提高产出。',
+        text: '工作产出与效率受「工作速度」训练值影响，提高该训练值可增加产出。',
       },
       {
         kind: 'note',
@@ -309,7 +309,7 @@ export const chapters: Chapter[] = [
     id: 'daily',
     mark: '六',
     title: '日常互动',
-    lede: '抚摸、好感度、待机动作，以及若干道具与自动化设施。',
+    lede: '抚摸与好感度、待机动作，以及若干道具与自动化设施的触发条件。',
     blocks: [
       { kind: 'sub', text: '抚摸' },
       {
@@ -578,7 +578,7 @@ export const chapters: Chapter[] = [
     id: 'compat',
     mark: '十一',
     title: '联动与兼容',
-    lede: '枪械、手册、僵尸皮肤与玩家动画均为可选联动，均不影响模组正常运行。',
+    lede: '枪械、手册、僵尸皮肤与玩家动画均为可选联动，不安装也不影响模组正常运行。',
     blocks: [
       { kind: 'sub', text: 'TACZ 枪械' },
       {
