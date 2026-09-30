@@ -12,7 +12,7 @@ const requirements = [
 const steps = [
   '先放入前置 `shota_partner_api`，再放入本体 `shota_partner`。本体另需 GeckoLib 4.8.x，一并放入 mods 目录。',
   '如需学校内容，再放入 `shota_partner_extra_school`。该包不依赖本体，可单独安装与升级。',
-  '进入游戏后，在 Mods 列表中确认三个 jar 的 modId 与版本；提交问题时请一并提供这几行信息。',
+  '进入游戏后，在 Mods 列表中确认三个 jar 的名称与版本；提交问题时请一并提供这几行信息。',
 ]
 
 export function Install() {
