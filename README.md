@@ -222,10 +222,10 @@ node relay/selftest.mjs   # 11 项：校验、标签映射、蜜罐、来源白�
 
 | 模板 | 适用情况（与站点反馈区一致） | 自动标签 |
 | --- | --- | --- |
-| 🐛 缺陷报告 | 可以游玩，但存在异常 | `bug`, `needs-triage` |
-| 💥 崩溃与启动失败 | 无法进入或直接崩溃 | `crash`, `needs-triage` |
-| 🧩 兼容性 / 服务端 / 整合包 | 单独安装正常，加入其它内容后异常 | `compatibility`, `needs-triage` |
-| ✨ 功能建议 | 需要提交功能想法 | `enhancement`, `needs-triage` |
+| 缺陷报告 | 可以游玩，但存在异常 | `bug`, `needs-triage` |
+| 崩溃与启动失败 | 无法进入或直接崩溃 | `crash`, `needs-triage` |
+| 兼容性 / 服务端 / 整合包 | 单独安装正常，加入其它内容后异常 | `compatibility`, `needs-triage` |
+| 功能建议 | 需要提交功能想法 | `enhancement`, `needs-triage` |
 
 每个模板的第一个字段都是**涉及模块**（Core / API / Extra-School / 不确定），用于分流。
 
@@ -239,6 +239,7 @@ npm run check:feedback   # 单独跑；不一致即退出码 1，并逐条打印
 
 - 校验由 [scripts/check-feedback-sync.mjs](scripts/check-feedback-sync.mjs) 执行，已挂在 `npm run build` 上，两边任何一处漂移都会让构建失败。
 - 只改 `.github/ISSUE_TEMPLATE/*.yml` 而不改站点，或反过来，都会被拦下；表单分组只允许出现站点也有的「环境」与「不予受理的情况」。
+- 模板名与站点类型名逐字相同，不带 emoji 等站点没有的装饰；模板描述是站点「适用场景 + 说明」两句的拼接（GitHub 选择页每条只能用一行说明），因此页面上出现的文字在 GitHub 上不会少。
 
 **维护者注意**：模板里的 `labels` 必须已存在于本仓库，否则 GitHub 会静默忽略。当前需要的标签：
 `needs-triage`、`bug`、`crash`、`compatibility`、`enhancement`、`question`、`documentation`、`duplicate`、`wontfix`、`good first issue`，

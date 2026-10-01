@@ -12,12 +12,12 @@
 
 blank_issues_enabled: false
 contact_links:
-  - name: 📖 站点：功能介绍与安装说明
+  - name: 站点：功能介绍与安装说明
     url: https://paltrow-studio.github.io/ShotaPartner-Docs/
     about: 三个模块各自负责什么、需要哪些前置、常见问题，先看这里
-  - name: 📘 仓库说明（README）
+  - name: 仓库说明（README）
     url: https://github.com/Paltrow-Studio/ShotaPartner-Docs/blob/main/README.md
     about: 反馈流程、日志怎么给、哪些信息必须提供
-  - name: 💬 讨论区：提问 / 玩法交流 / 不确定是不是 bug
+  - name: 讨论区：提问 / 玩法交流 / 不确定是不是 bug
     url: https://github.com/Paltrow-Studio/ShotaPartner-Docs/discussions
     about: 支持类提问请走 Discussions —— issue 区只处理可复现的缺陷与需求

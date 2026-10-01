@@ -52,6 +52,7 @@ const issueTypes = blockOf('export const issueTypes', 'export type ModuleOption'
     template: fieldOf(chunk, 'template'),
     name: fieldOf(chunk, 'name'),
     desc: fieldOf(chunk, 'desc'),
+    when: fieldOf(chunk, 'when'),
     titlePrefix: fieldOf(chunk, 'titlePrefix'),
     labels: fieldOf(chunk, 'labels'),
   }))
@@ -204,9 +205,9 @@ for (const type of issueTypes) {
   validateShape(file, fs.readFileSync(file, 'utf8'))
   checked++
 
-  const ymlName = (form.name ?? '').replace(/^\S+\s+/, '')
-  if (ymlName !== type.name) fail(`${type.template}：name 应为「${type.name}」，实际「${form.name}」`)
-  if ((form.description ?? '') !== type.desc) fail(`${type.template}：description 与站点不一致\n    站点：${type.desc}\n    表单：${form.description}`)
+  if ((form.name ?? '') !== type.name) fail(`${type.template}：name 应为「${type.name}」，实际「${form.name}」（不要添加站点没有的 emoji 或后缀）`)
+  const wantDesc = `${type.when}。${type.desc}`
+  if ((form.description ?? '') !== wantDesc) fail(`${type.template}：description 应为站点「适用场景 + 说明」\n    站点：${wantDesc}\n    表单：${form.description}`)
   if ((form.title ?? '').trim() !== `${type.titlePrefix} `.trim()) fail(`${type.template}：title 应为「${type.titlePrefix}」，实际「${form.title}」`)
   if (form.labels.join(',') !== type.labels.split(',').map((s) => s.trim()).join(',')) {
     fail(`${type.template}：labels 应为「${type.labels}」，实际「${form.labels.join(',')}」`)
