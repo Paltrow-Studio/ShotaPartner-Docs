@@ -167,6 +167,33 @@ function parseForm(file) {
   return form
 }
 
+/* ---------- 结构校验（GitHub 表单schema的基本约束） ---------- */
+
+const ALLOWED_TOP = new Set(['name', 'description', 'title', 'labels', 'assignees', 'body'])
+const ALLOWED_TYPE = new Set(['markdown', 'input', 'textarea', 'dropdown', 'checkboxes'])
+const MAX_OPTIONS = 25
+
+function validateShape(file, text) {
+  const rel = path.relative(ROOT, file)
+  const topKeys = [...text.matchAll(/^([a-z_]+):/gm)].map((m) => m[1])
+  for (const key of topKeys) {
+    if (!ALLOWED_TOP.has(key)) fail(`${rel}：顶层键「${key}」不是 Issue Form 允许的字段`)
+  }
+  const types = [...text.matchAll(/^\s*- type: (\S+)\s*$/gm)].map((m) => m[1])
+  for (const t of types) {
+    if (!ALLOWED_TYPE.has(t)) fail(`${rel}：字段类型「${t}」不被支持`)
+  }
+  const ids = [...text.matchAll(/^\s+id: (\S+)\s*$/gm)].map((m) => m[1])
+  const dup = ids.filter((id, i) => ids.indexOf(id) !== i)
+  if (dup.length) fail(`${rel}：id 重复（${[...new Set(dup)].join('、')}）`)
+  for (const id of ids) {
+    if (!/^[A-Za-z0-9_-]+$/.test(id)) fail(`${rel}：id「${id}」只能包含字母、数字、下划线与连字符`)
+  }
+  if (ids.length !== types.filter((t) => t !== 'markdown').length) {
+    fail(`${rel}：字段数与 id 数不一致（markdown 区块不应有 id）`)
+  }
+}
+
 /* ---------- 比对 ---------- */
 
 let checked = 0
@@ -174,6 +201,7 @@ for (const type of issueTypes) {
   const file = path.join(TEMPLATE_DIR, type.template)
   if (!fs.existsSync(file)) { fail(`缺少模板文件：.github/ISSUE_TEMPLATE/${type.template}`); continue }
   const form = parseForm(file)
+  validateShape(file, fs.readFileSync(file, 'utf8'))
   checked++
 
   const ymlName = (form.name ?? '').replace(/^\S+\s+/, '')
@@ -226,4 +254,5 @@ if (problems.length) {
   console.error('\n处理方式：以 src/data/feedback.ts 为准修改 .github/ISSUE_TEMPLATE/*.yml，而不是反过来。')
   process.exit(1)
 }
-console.log(`表单同步：${checked} 个 Issue 表单与站点反馈区一致（模组选项 ${moduleOptions.length} 项、自检 ${checklist.length} 条、字段按类型同步）`)
+const fieldCount = issueTypes.reduce((n, t) => n + 2 + scaffold[t.id].reduce((m, s2) => m + (s2.heading === '环境' ? 6 : 1), 0), 0)
+console.log(`表单同步：${checked} 个 Issue 表单与站点反馈区一致（字段 ${fieldCount} 项、模组选项 ${moduleOptions.length} 项、自检 ${checklist.length} 条）`)
