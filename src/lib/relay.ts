@@ -19,7 +19,6 @@ export type SubmitInput = {
   body: string
   contact: string
   titlePrefix: string
-  moduleTag: string
   /** 蜜罐：页面上不可见，只有脚本会填 */
   honeypot: string
 }

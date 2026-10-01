@@ -17,6 +17,11 @@ description: "单独安装正常，加入其它内容后异常。与其它模组
 title: "[兼容] "
 labels: ["compatibility", "needs-triage"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        适用场景：单独安装正常，加入其它内容后异常。
+
   - type: dropdown
     id: module
     attributes:

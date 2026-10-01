@@ -195,6 +195,19 @@ function validateShape(file, text) {
   }
 }
 
+/* ---------- 站点链接：不得预填标题 ---------- */
+
+const urlStart = source.indexOf('export function buildIssueUrl')
+if (urlStart < 0) fail('src/data/feedback.ts：找不到 buildIssueUrl')
+else {
+  const urlBody = source.slice(urlStart, source.indexOf('\n}', urlStart))
+  if (/\btitle\b/.test(urlBody)) {
+    fail('src/data/feedback.ts：buildIssueUrl 不应预填 title —— 标题要交给模板默认值，否则从站点链接进入与从 GitHub 的 Create new issue 进入会得到不同标题')
+  }
+  if (!/template:\s*type\.template/.test(urlBody)) fail('src/data/feedback.ts：buildIssueUrl 应预填 template')
+  if (!/labels:\s*type\.labels/.test(urlBody)) fail('src/data/feedback.ts：buildIssueUrl 应预填 labels')
+}
+
 /* ---------- 比对 ---------- */
 
 let checked = 0
@@ -230,9 +243,21 @@ for (const type of issueTypes) {
   }
 
   const allowedMarkdown = new Set(['不予受理的情况', '环境'])
+  const whenBlocks = []
   for (const m of form.markdown) {
-    const heading = m.value.split('\n')[0].replace(/^#+\s*/, '').trim()
+    const first = m.value.split('\n')[0].trim()
+    if (first.startsWith('适用场景：')) { whenBlocks.push(m); continue }
+    const heading = first.replace(/^#+\s*/, '').trim()
     if (!allowedMarkdown.has(heading)) fail(`${type.template}：出现了站点没有的分组「${heading}」`)
+  }
+  if (whenBlocks.length !== 1) {
+    fail(`${type.template}：应有一处「适用场景：」说明块，实际 ${whenBlocks.length} 处`)
+  } else {
+    const text = whenBlocks[0].value.replace(/\s+/g, '')
+    if (!text.includes(`${type.when}。`.replace(/\s+/g, ''))) {
+      fail(`${type.template}：说明块里的适用场景与站点不一致\n    站点：${type.when}\n    表单：${whenBlocks[0].value.trim()}`)
+    }
+    if (form.markdown[0] !== whenBlocks[0]) fail(`${type.template}：「适用场景」说明块应放在表单最前`)
   }
 
   const expected = ['涉及模块', '提交前自检']

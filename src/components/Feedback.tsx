@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   buildIssueUrl,
   buildReportDraft,
+  formFieldList,
   issueTypes,
   moduleOptions,
   reportAntiPatterns,
@@ -26,6 +27,7 @@ export function Feedback() {
   const [typeId, setTypeId] = useState<IssueTypeId>('bug')
   const [moduleId, setModuleId] = useState<ModuleId | 'unknown'>('core')
   const [copied, setCopied] = useState(false)
+  const [copiedFields, setCopiedFields] = useState(false)
   const [summary, setSummary] = useState('')
   const [contact, setContact] = useState('')
   const [honeypot, setHoneypot] = useState('')
@@ -43,9 +45,10 @@ export function Feedback() {
 
   const type = useMemo(() => issueTypes.find((t) => t.id === typeId)!, [typeId])
   const option = useMemo(() => moduleOptions.find((m) => m.id === moduleId) ?? moduleOptions[3], [moduleId])
-  const url = useMemo(() => buildIssueUrl(type, moduleId), [type, moduleId])
+  const url = useMemo(() => buildIssueUrl(type), [type])
+  const fields = useMemo(() => formFieldList(type), [type])
   const searchUrl = `${ISSUES}?q=${encodeURIComponent(
-    `is:issue ${option.titleTag === '未确定' ? '' : option.titleTag}`.trim(),
+    `is:issue ${option.id === 'unknown' ? '' : option.formOption.split('（')[0]}`.trim(),
   )}`
 
   // 配置了中继地址时，反馈区进入视口再探测；地址为空时该函数直接返回，不发任何请求
@@ -81,7 +84,6 @@ export function Feedback() {
       body: draft.body,
       contact: contact.trim(),
       titlePrefix: type.titlePrefix,
-      moduleTag: option.titleTag,
       honeypot,
     })
     if (result.ok) {
@@ -103,6 +105,17 @@ export function Feedback() {
     }
   }
 
+  const copyFields = async () => {
+    const text = [`${type.name}（${type.template}）的字段`, ...fields.map((f, i) => `${i + 1}. ${f}`)].join('\n')
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedFields(true)
+      window.setTimeout(() => setCopiedFields(false), 2000)
+    } catch {
+      setCopiedFields(false)
+    }
+  }
+
   return (
     <section
       id="feedback"
@@ -116,7 +129,7 @@ export function Feedback() {
       <h2 className="mt-3 text-2xl sm:text-[1.7rem]">问题反馈</h2>
       <p className="mt-2 max-w-3xl text-[0.95rem] text-ink-soft">
         三个模组仓库未公开，玩家反馈统一提交至本页所在仓库，issue 区对所有人可见。
-        在下方选择问题类型与涉及的模块，表单的标题与标签会自动预填，其余内容在 GitHub 上补齐后提交。
+        在下方选择问题类型与涉及的模块，打开表单后标签会自动带上，标题沿用模板默认值，其余内容在 GitHub 上补齐后提交。
       </p>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.15fr_1fr]">
@@ -159,20 +172,20 @@ export function Feedback() {
 
             <p className="chapter-mark mt-7">二</p>
             <h3 className="mt-1 text-[1rem] font-semibold text-ink">涉及模块</h3>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-3 space-y-2">
               {moduleOptions.map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => setModuleId(item.id)}
                   aria-pressed={item.id === moduleId}
-                  className={`rounded-md border px-3 py-1.5 text-[0.85rem] transition-colors ${
+                  className={`block w-full rounded-md border px-3 py-2 text-left text-[0.85rem] transition-colors ${
                     item.id === moduleId
                       ? 'border-seal bg-paper-sunk text-seal'
                       : 'border-line text-ink-soft hover:border-line-strong hover:text-ink'
                   }`}
                 >
-                  {item.label}
+                  {item.formOption}
                 </button>
               ))}
             </div>
@@ -190,7 +203,7 @@ export function Feedback() {
                 <div className="flex flex-wrap items-baseline gap-2">
                   <dt className="num w-20 shrink-0 text-ink-faint">标题</dt>
                   <dd>
-                    <code>{`${type.titlePrefix} [${option.titleTag}] …`}</code>
+                    <code>{`${type.titlePrefix} …`}</code>
                   </dd>
                 </div>
                 <div className="flex flex-wrap items-baseline gap-2">
@@ -207,6 +220,25 @@ export function Feedback() {
               <p className="mt-3 border-t border-dashed border-line pt-3 text-[0.82rem] text-ink-faint">
                 打开表单后，将「涉及模块」一项选为「{option.formOption}」，其余必填项按提示补齐。
               </p>
+
+              <div className="mt-3 border-t border-dashed border-line pt-3">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <p className="text-[0.82rem] text-ink-faint">
+                    GitHub 表单会按这个顺序逐项询问（共 {fields.length} 项）
+                  </p>
+                  <button type="button" onClick={copyFields} className="link-quiet text-[0.82rem] text-ink-soft">
+                    {copiedFields ? '已复制字段清单' : '复制字段清单'}
+                  </button>
+                </div>
+                <ol className="mt-2 space-y-1 text-[0.82rem] leading-relaxed text-ink-soft">
+                  {fields.map((field, index) => (
+                    <li key={field} className="flex gap-2">
+                      <span className="num w-5 shrink-0 text-right text-ink-faint">{index + 1}</span>
+                      <span>{field}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3 text-[0.88rem]">
@@ -362,7 +394,7 @@ export function Feedback() {
                 {issueTypes.map((item) => (
                   <li key={item.id}>
                     <a
-                      href={buildIssueUrl(item, moduleId)}
+                      href={buildIssueUrl(item)}
                       target="_blank"
                       rel="noreferrer noopener"
                       className="link-quiet inline-block py-1 text-ink-soft"

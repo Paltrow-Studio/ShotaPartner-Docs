@@ -18,6 +18,11 @@ description: "可以游玩，但存在异常。游戏可以进入，但某项功
 title: "[Bug] "
 labels: ["bug", "needs-triage"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        适用场景：可以游玩，但存在异常。
+
   - type: dropdown
     id: module
     attributes:

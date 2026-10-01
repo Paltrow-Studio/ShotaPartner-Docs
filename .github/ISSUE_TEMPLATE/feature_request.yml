@@ -17,6 +17,11 @@ description: "需要提交功能想法。希望新增的功能、需要调整的
 title: "[建议] "
 labels: ["enhancement", "needs-triage"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        适用场景：需要提交功能想法。
+
   - type: dropdown
     id: module
     attributes:

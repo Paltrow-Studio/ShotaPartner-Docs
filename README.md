@@ -239,7 +239,9 @@ npm run check:feedback   # 单独跑；不一致即退出码 1，并逐条打印
 
 - 校验由 [scripts/check-feedback-sync.mjs](scripts/check-feedback-sync.mjs) 执行，已挂在 `npm run build` 上，两边任何一处漂移都会让构建失败。
 - 只改 `.github/ISSUE_TEMPLATE/*.yml` 而不改站点，或反过来，都会被拦下；表单分组只允许出现站点也有的「环境」与「不予受理的情况」。
-- 模板名与站点类型名逐字相同，不带 emoji 等站点没有的装饰；模板描述是站点「适用场景 + 说明」两句的拼接（GitHub 选择页每条只能用一行说明），因此页面上出现的文字在 GitHub 上不会少。
+- 模板名与站点类型名逐字相同，不带 emoji 等站点没有的装饰；模板描述是站点「适用场景 + 说明」两句的拼接（GitHub 选择页每条只能用一行说明），表单顶部还有一处「适用场景」说明块。
+- 站点链接只预填模板与标签，**不预填标题**：标题沿用模板默认值，因此「从站点链接进入」与「从 GitHub 的 Create new issue 进入」得到的标题一致；涉及模块由表单下拉记录。校验脚本会拦住重新加回标题预填。
+- 站点的模块选项、以及步骤三里那份「GitHub 表单会按这个顺序逐项询问」的字段清单，都由 `src/data/feedback.ts` 派生，与表单逐字对应。
 
 **维护者注意**：模板里的 `labels` 必须已存在于本仓库，否则 GitHub 会静默忽略。当前需要的标签：
 `needs-triage`、`bug`、`crash`、`compatibility`、`enhancement`、`question`、`documentation`、`duplicate`、`wontfix`、`good first issue`，

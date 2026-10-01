@@ -96,7 +96,6 @@ if (live) {
       summary: '中继链路自检，可关闭',
       body: '这条 issue 由 relay/verify-remote.mjs --live 创建，用于验证中继权限与链路，确认后可直接关闭。\n',
       titlePrefix: '[Bug]',
-      moduleTag: '中继自检',
     }),
   })
   const json = await res.json().catch(() => null)

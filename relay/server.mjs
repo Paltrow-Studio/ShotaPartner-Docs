@@ -152,9 +152,8 @@ function validate(input) {
 
   const contact = String(input.contact ?? '').replace(/\s+/g, ' ').trim().slice(0, 120)
   const prefix = String(input.titlePrefix ?? '').trim().slice(0, 24)
-  const moduleTag = String(input.moduleTag ?? '').trim().slice(0, 24)
 
-  const title = `${prefix ? `${prefix} ` : ''}${moduleTag ? `[${moduleTag}] ` : ''}${summary}`.slice(0, TITLE_MAX)
+  const title = `${prefix ? `${prefix} ` : ''}${summary}`.slice(0, TITLE_MAX)
   const labels = [...TYPE_LABELS[type], ...(MODULE_LABELS[moduleId] ? [MODULE_LABELS[moduleId]] : [])]
   const footer = [`---`, `经站点反馈区中继提交（${new Date().toISOString()}）`]
   if (contact) footer.push(`联系方式：${contact}`)

@@ -31,7 +31,6 @@ const cases = [
         body: longBody,
         labels: ['伪造标签'],
         titlePrefix: '[Bug]',
-        moduleTag: 'Core',
       },
     },
     expect: { status: 200, ok: true, labels: ['bug', 'needs-triage', 'module:core'] },

@@ -102,7 +102,6 @@ npx wrangler kv namespace create RATE_KV   # 把输出的 id 填进 wrangler.tom
   "body": "### 环境\n- 模组版本：0.3.1\n…",
   "contact": "QQ 12345",
   "titlePrefix": "[Bug]",
-  "moduleTag": "Core",
   "honeypot": ""
 }
 ```

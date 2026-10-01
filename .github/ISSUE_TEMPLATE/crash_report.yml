@@ -17,6 +17,11 @@ description: "无法进入或直接崩溃。崩溃、无法启动、卡在加载
 title: "[崩溃] "
 labels: ["crash", "needs-triage"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        适用场景：无法进入或直接崩溃。
+
   - type: dropdown
     id: module
     attributes:

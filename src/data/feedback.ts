@@ -2,8 +2,8 @@
  * 公开问题反馈区的数据与链接生成。
  *
  * 静态站点没有后端，所以走 GitHub 官方的 issue 表单深链：
- * issues/new?template=…&title=…&labels=… 把问题类型和涉及模块预填进去，
- * 玩家在 GitHub 上完成提交。
+ * issues/new?template=…&labels=… 选中模板并带上标签，玩家在 GitHub 上完成提交。
+ * 标题不预填，交给模板默认值，使两条入口（本站链接 / GitHub 的 Create new issue）表现一致。
  */
 
 import { ISSUES_NEW } from './site'
@@ -69,41 +69,28 @@ export const issueTypes: IssueType[] = [
 
 export type ModuleOption = {
   id: ModuleId | 'unknown'
-  titleTag: string
-  label: string
-  /** 表单里「涉及模块」该选哪一项 */
+  /** 表单里「涉及模块」下拉的选项原文；站内与表单逐字一致，不做别名 */
   formOption: string
 }
 
 export const moduleOptions: ModuleOption[] = [
-  {
-    id: 'core',
-    titleTag: 'Core',
-    label: '本体',
-    formOption: 'ShotaPartner-Core（游戏本体：伙伴/技能/战斗/物品/方块）',
-  },
-  { id: 'api', titleTag: 'API', label: '前置 API', formOption: 'ShotaPartner-API（公共前置 API）' },
-  {
-    id: 'school',
-    titleTag: 'School',
-    label: '学校包',
-    formOption: 'ShotaPartner-Extra-School（学校维度追加包）',
-  },
-  {
-    id: 'unknown',
-    titleTag: '未确定',
-    label: '不确定',
-    formOption: '不确定 / 与多个模块都有关',
-  },
+  { id: 'core', formOption: 'ShotaPartner-Core（游戏本体：伙伴/技能/战斗/物品/方块）' },
+  { id: 'api', formOption: 'ShotaPartner-API（公共前置 API）' },
+  { id: 'school', formOption: 'ShotaPartner-Extra-School（学校维度追加包）' },
+  { id: 'unknown', formOption: '不确定 / 与多个模块都有关' },
 ]
 
-/** 生成带预填的 issue 表单链接 */
-export function buildIssueUrl(type: IssueType, moduleId: ModuleId | 'unknown'): string {
-  const option = moduleOptions.find((m) => m.id === moduleId) ?? moduleOptions[3]
-  const title = `${type.titlePrefix} [${option.titleTag}] `
+/**
+ * 生成带预填的 issue 表单链接。
+ *
+ * 只预填模板与标签，**不预填标题、也不带模块**：
+ *   - 标题交给模板自己的默认值，因此「从本站点链接进入」与「从 GitHub 的 Create new issue 进入」
+ *     得到的标题完全一致；
+ *   - 涉及模块由表单的「涉及模块」下拉记录（页面会提示该选哪一项），不再重复写进标题。
+ */
+export function buildIssueUrl(type: IssueType): string {
   const params = new URLSearchParams({
     template: type.template,
-    title,
     labels: type.labels,
   })
   return `${ISSUES_NEW}?${params.toString()}`
@@ -208,7 +195,21 @@ export function buildReportDraft(type: IssueType, moduleId: ModuleId | 'unknown'
     '',
     ...reportScaffold[type.id].map((section) => `### ${section.heading}\n${section.lines.join('\n')}`),
   ].join('\n\n')
-  return { title: `${type.titlePrefix} [${option.titleTag}] `, labels: type.labels, body }
+  return { title: `${type.titlePrefix} `, labels: type.labels, body }
+}
+
+/**
+ * GitHub 表单会逐项询问的字段，顺序与 .github/ISSUE_TEMPLATE/*.yml 完全相同。
+ * 「环境」在表单里是六个独立字段，这里同样展开，便于与表单逐项对照。
+ */
+export function formFieldList(type: IssueType): string[] {
+  const strip = (line: string) => line.replace(/^-\s*/, '').replace(/：.*$/, '').trim()
+  const labels: string[] = ['涉及模块', '提交前自检']
+  for (const section of reportScaffold[type.id]) {
+    if (section.heading === '环境') labels.push(...section.lines.map(strip).filter(Boolean))
+    else labels.push(section.heading)
+  }
+  return labels
 }
 
 /** 生成可复制的纯文本反馈草稿（含标题、标签与提交地址，便于转发）。 */
@@ -217,7 +218,7 @@ export function buildReportText(type: IssueType, moduleId: ModuleId | 'unknown')
   return [
     `标题：${draft.title}`,
     `标签：${draft.labels}`,
-    `表单：${buildIssueUrl(type, moduleId)}`,
+    `表单：${buildIssueUrl(type)}`,
     '（若无法访问 GitHub，可将以上标题与下列正文一并发送给维护者）',
     '',
     draft.body,
