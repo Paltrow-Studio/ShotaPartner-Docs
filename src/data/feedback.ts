@@ -110,8 +110,11 @@ export function buildIssueUrl(type: IssueType, moduleId: ModuleId | 'unknown'): 
 }
 
 /**
- * 各类问题对应的填写框架。字段与 .github/ISSUE_TEMPLATE/*.yml 中的 label 同名，
+ * 各类问题对应的填写框架。字段与 .github/ISSUE_TEMPLATE/*.yml 中的 label 同名且顺序一致，
  * 因此复制出来的内容既可直接粘进表单，也可作为聊天或邮件里的完整反馈正文。
+ *
+ * 本文件是反馈表单的唯一来源：Issue 表单、自检条目与不予受理的情况都以这里为准。
+ * 改动后运行 `npm run check:feedback`（已挂在 `npm run build` 上）确认两边一致。
  */
 const reportScaffold: Record<IssueTypeId, { heading: string; lines: string[] }[]> = {
   bug: [
@@ -157,6 +160,7 @@ const reportScaffold: Record<IssueTypeId, { heading: string; lines: string[] }[]
     { heading: '实际结果', lines: [''] },
     { heading: '复现频率', lines: ['- （每次 / 偶尔 / 仅出现过一次）'] },
     { heading: '最小环境验证', lines: ['- '] },
+    { heading: '补充说明', lines: [''] },
   ],
   compatibility: [
     { heading: '问题类型', lines: ['- （与其它模组冲突 / 整合包异常 / 专用服务端异常 / 学校维度缺方块）'] },

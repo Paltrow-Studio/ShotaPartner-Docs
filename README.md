@@ -90,7 +90,8 @@ relay/
 | 版本号与前置依赖 | `src/data/modules.ts` |
 | 导航、首屏文案 | `src/data/site.ts` |
 | 常见问题 | `src/data/faq.ts` |
-| 反馈类型 / 模块选项 / 预填逻辑 | `src/data/feedback.ts` |
+| 反馈类型 / 模块选项 / 预填逻辑 | `src/data/feedback.ts`（**反馈表单的唯一来源**，Issue 表单与它同步） |
+| GitHub Issue 表单 | `.github/ISSUE_TEMPLATE/*.yml`，以 `src/data/feedback.ts` 为准；`npm run check:feedback` 校验 |
 | 反馈中继地址、国内备用入口 | `src/data/site.ts`（`FEEDBACK_RELAY_URL` / `FALLBACK_FEEDBACK_URL` / `SITE_MIRROR_URL`） |
 | 反馈中继服务 | `relay/`（部署与安全说明见 `relay/README.md`） |
 | 配色、纸面质感、字体 | `src/index.css`（`:root` 与 `[data-theme='dark']` 两套变量） |
@@ -101,7 +102,7 @@ relay/
 `guide.ts` 里每章由若干内容块组成，可用的 `kind`：
 `p`（段落，支持 `` `代码` ``、`**加粗**`、`[文字](链接)`）、`sub`（小标题）、`list`、`steps`、`keys`、`table`、`note`（批注）。
 
-改动后请跑一次 `npm run build`（含类型检查）再提交；CI 会用同样的命令构建。
+改动后请跑一次 `npm run build`（含类型检查、内容门禁与表单同步检查）再提交；CI 会用同样的命令构建。
 
 ## 站点图标
 
@@ -219,14 +220,25 @@ node relay/selftest.mjs   # 11 项：校验、标签映射、蜜罐、来源白�
 
 四个 Issue Form 都在 [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE)：
 
-| 模板 | 适用情况 | 自动标签 |
+| 模板 | 适用情况（与站点反馈区一致） | 自动标签 |
 | --- | --- | --- |
-| 🐛 缺陷报告 | 能进游戏，但功能行为不对 | `bug`, `needs-triage` |
-| 💥 崩溃与启动失败 | 崩溃、打不开、卡加载屏、JVM 崩溃 | `crash`, `needs-triage` |
-| 🧩 兼容性 / 服务端 / 整合包 | 模组冲突、整合包异常、专用服务端、学校缺方块 | `compatibility`, `needs-triage` |
-| ✨ 功能建议 | 新增功能、改进现有行为 | `enhancement`, `needs-triage` |
+| 🐛 缺陷报告 | 可以游玩，但存在异常 | `bug`, `needs-triage` |
+| 💥 崩溃与启动失败 | 无法进入或直接崩溃 | `crash`, `needs-triage` |
+| 🧩 兼容性 / 服务端 / 整合包 | 单独安装正常，加入其它内容后异常 | `compatibility`, `needs-triage` |
+| ✨ 功能建议 | 需要提交功能想法 | `enhancement`, `needs-triage` |
 
 每个模板的第一个字段都是**涉及模块**（Core / API / Extra-School / 不确定），用于分流。
+
+### 表单与站点同步
+
+Issue 表单与站点反馈区（[`src/data/feedback.ts`](src/data/feedback.ts)）严格一致，**以站点为准**：类型名称与描述、标题前缀、自动标签、涉及模块选项、各类问题的字段标签与顺序（「环境」展开为模组版本 / Forge 版本 / 运行环境 / Java 版本 / 是否使用整合包 / 模组列表）、「提交前自检」条目，以及「不予受理的情况」，全部由站点定义。
+
+```bash
+npm run check:feedback   # 单独跑；不一致即退出码 1，并逐条打印差异
+```
+
+- 校验由 [scripts/check-feedback-sync.mjs](scripts/check-feedback-sync.mjs) 执行，已挂在 `npm run build` 上，两边任何一处漂移都会让构建失败。
+- 只改 `.github/ISSUE_TEMPLATE/*.yml` 而不改站点，或反过来，都会被拦下；表单分组只允许出现站点也有的「环境」与「不予受理的情况」。
 
 **维护者注意**：模板里的 `labels` 必须已存在于本仓库，否则 GitHub 会静默忽略。当前需要的标签：
 `needs-triage`、`bug`、`crash`、`compatibility`、`enhancement`、`question`、`documentation`、`duplicate`、`wontfix`、`good first issue`，

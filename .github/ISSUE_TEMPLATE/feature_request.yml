@@ -1,114 +1,113 @@
 # 伙伴物语 / Partner Monogatari —— 功能建议（Issue Form）
 #
-# 适用范围：新功能、玩法改进、体验优化、文档与文案建议。
-# 提问 / 玩法交流请走 Discussions；「希望支持其它 MC 版本」这类超出当前范围的需求请先看站点说明。
+# 适用场景：需要提交功能想法
+# 适用范围：希望新增的功能、需要调整的手感与数值、需要改进的界面提示。
+# 不适用：
+#   - 可复现的缺陷 -> 使用「🐛 缺陷报告」模板
+#   - 崩溃 -> 使用「💥 崩溃与启动失败」模板
 #
-# 维护提示：labels 必须已经存在于本仓库，否则 GitHub 会忽略该标签。
+# 维护提示：本表单与站点反馈区严格同步，字段标签与顺序、类型名称与描述、
+# 涉及模块选项、提交前自检条目、不予受理的情况，全部以站点为准。
+# 站点数据在 src/data/feedback.ts，改动任意一边后请运行 `npm run check:feedback`
+# （已挂在 `npm run build` 上）确认两边一致。
+# labels 必须已经存在于本仓库，否则 GitHub 会忽略该标签。
 
 name: ✨ 功能建议
-description: 提出新功能、玩法改进、体验优化或文档建议
+description: "希望新增的功能、需要调整的手感与数值、需要改进的界面提示。"
 title: "[建议] "
 labels: ["enhancement", "needs-triage"]
 body:
-  # ---------- 提交前自检 ----------
-  - type: checkboxes
-    id: preflight
-    attributes:
-      label: 提交前自检
-      description: 请逐条确认后再提交；未确认的条目会让 issue 被直接关闭而浪费双方时间。
-      options:
-        - label: 已搜索过现有 issue（含已关闭的），并确认没有重复建议
-          required: true
-        - label: 这个建议不是「希望支持其它 MC 版本」这类超出范围的需求
-          required: true
-    validations:
-      required: true
-
-  # ---------- 模块定位 ----------
   - type: dropdown
     id: module
     attributes:
-      label: 涉及模块
-      description: 这个建议应该落在哪个模块里？不确定就选最后一项。
+      label: "涉及模块"
+      description: "请选择最可能出问题的一个模块；完全不确定就选最后一项，我们会帮忙判断。"
       options:
-        - ShotaPartner-Core（游戏本体：伙伴/技能/战斗/物品/方块）
-        - ShotaPartner-API（公共前置 API）
-        - ShotaPartner-Extra-School（学校维度追加包）
-        - 不确定 / 与多个模块都有关
+        - "ShotaPartner-Core（游戏本体：伙伴/技能/战斗/物品/方块）"
+        - "ShotaPartner-API（公共前置 API）"
+        - "ShotaPartner-Extra-School（学校维度追加包）"
+        - "不确定 / 与多个模块都有关"
     validations:
       required: true
 
-  # ---------- 问题与方案 ----------
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: "提交前自检"
+      description: "与站点反馈区「提交前需准备的信息」逐条对应，请确认后再提交。"
+      options:
+        - label: "完整的模组列表：mods 目录下所有 jar 的文件名；使用整合包时写明整合包名称与版本"
+          required: true
+        - label: "复现步骤：按步骤可以复现问题；若不确定是否必然出现，请一并说明"
+          required: true
+        - label: "日志链接：完整日志已上传 mclo.gs 或 Gist，issue 中仅贴相关的数十行"
+          required: true
+        - label: "截图或录屏：界面错位、渲染异常、学校缺少装饰这类问题已准备附图"
+          required: false
+    validations:
+      required: true
+
   - type: markdown
     attributes:
       value: |
-        ## 问题与方案
+        ## 不予受理的情况
 
-        先说清楚「遇到了什么问题」，再说「想怎么改」——这样我们才能判断有没有更好的实现方式。
+        - 整份 latest.log 不要粘贴到 issue 中，提供链接即可。
+        - 提交前先搜索已有 issue（含已关闭的），同类问题在原帖下跟进。
+        - 如何安装、如何游玩这类问题请发至讨论区，issue 区用于可复现的问题与具体建议。
+        - issue 内容公开，请勿包含服务器地址、联系方式等个人信息。
 
   - type: textarea
     id: problem
     attributes:
-      label: 想解决的问题
-      description: 描述你遇到的实际困难或体验上的不足，不需要在这里给出实现方案。
-      placeholder: 例如：伙伴数量多了以后，每次都要手动一个个切换，操作很繁琐。
+      label: "想解决的问题"
+      description: "描述你遇到的实际困难或体验上的不足；先说清楚「遇到了什么问题」，再说「想怎么改」，这样我们才能判断有没有更好的实现方式。"
+      placeholder: "例如：伙伴数量多了以后，每次都要手动一个个切换，操作很繁琐。"
     validations:
       required: true
 
   - type: textarea
     id: proposal
     attributes:
-      label: 期望的方案
-      description: 你希望新增或改动什么？越具体越好（快捷键、界面位置、数值范围等）。
-      placeholder: 例如：增加一个伙伴快捷轮盘，按住某键选择后直接指挥。
+      label: "期望的方案"
+      description: "你希望新增或改动什么？越具体越好（快捷键、界面位置、数值范围等）。"
+      placeholder: "例如：增加一个伙伴快捷轮盘，按住某键选择后直接指挥。"
     validations:
       required: true
 
   - type: textarea
     id: alternatives
     attributes:
-      label: 考虑过的替代方案
-      description: 你试过哪些绕开这个问题的办法？为什么不够用？
+      label: "考虑过的替代方案"
+      description: "你试过哪些绕开这个问题的办法？为什么不够用？"
     validations:
       required: false
 
   - type: dropdown
     id: breaking
     attributes:
-      label: 是否可能影响兼容性
-      description: 如果你不确定，选「不确定」即可，我们会自己评估。
+      label: "是否可能影响兼容性"
+      description: "如果你不确定，选「不确定」即可，我们会自己评估。"
       options:
-        - 不会
-        - 会改动公开 API 契约
-        - 会改动存档或注册名
-        - 不确定
-    validations:
-      required: true
-
-  - type: dropdown
-    id: contribute
-    attributes:
-      label: 你愿意参与吗
-      description: 愿意提 PR 或帮忙测试会显著提高这个建议落地的概率。
-      options:
-        - 愿意提 PR
-        - 愿意帮忙测试
-        - 只提建议
+        - "不会"
+        - "会改动对外接口"
+        - "会改动存档或注册名"
+        - "不确定"
     validations:
       required: true
 
   - type: textarea
     id: reference
     attributes:
-      label: 参考
-      description: 其它模组、视频、Wiki 或截图里已有的实现，可以贴链接。
+      label: "参考"
+      description: "其它模组、视频、Wiki 或截图里已有的实现，可以贴链接。"
     validations:
       required: false
 
   - type: textarea
     id: extra
     attributes:
-      label: 补充说明
-      description: 任何上面没问到、但你觉得可能有帮助的信息。
+      label: "补充说明"
+      description: "任何上面没问到、但你觉得可能有帮助的信息。"
     validations:
       required: false
