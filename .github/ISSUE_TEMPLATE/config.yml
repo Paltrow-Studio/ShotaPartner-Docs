@@ -4,20 +4,23 @@
 #   1. 本文件位于仓库的 .github/ 目录下，属于「仓库级模板」，会整体覆盖组织级（Paltrow-Studio/.github）
 #      的同名模板。也就是说：本仓库的模板一旦存在，组织级 Issue 模板就不会再生效；
 #      若希望某些模板沿用组织级，需要把对应文件删掉或在这里显式补齐。
-#   2. contact_links 与各 Issue Form 里用到的 labels（bug / crash / compatibility / enhancement / needs-triage）
-#      必须已经存在于本仓库（标签不存在时 GitHub 会静默忽略，不会报错）。
+#   2. contact_links 与 Issue Form 里用到的 labels（needs-triage）必须已经存在于本仓库
+#      （标签不存在时 GitHub 会静默忽略，不会报错）。
+#      只有一张表单 feedback.yml，字段为标题 / 版本 / 内容 / 截图；分类由维护者补标签。
+#      站点（src/data/feedback.ts）是唯一来源，改动后运行
+#      node scripts/check-feedback-sync.mjs --write 重新生成。
 #   3. 关闭 blank issue 是有意为之：issue 区只处理可复现的缺陷与需求，支持类提问请走 Discussions。
 #   4. 三个模组仓库（ShotaPartner-Core / ShotaPartner-API / ShotaPartner-Extra-School）目前是私有的，
 #      玩家的公开反馈统一提交到本 Docs 仓库。
 
 blank_issues_enabled: false
 contact_links:
-  - name: 站点：功能介绍与安装说明
-    url: https://paltrow-studio.github.io/ShotaPartner-Docs/
-    about: 三个模块各自负责什么、需要哪些前置、常见问题，先看这里
-  - name: 仓库说明（README）
-    url: https://github.com/Paltrow-Studio/ShotaPartner-Docs/blob/main/README.md
-    about: 反馈流程、日志怎么给、哪些信息必须提供
+  - name: 站点：功能介绍 / 提交反馈 / 查看进度
+    url: https://paltrow-studio.github.io/ShotaPartner-Docs/#feedback
+    about: 在浏览器里填标题、版本、内容即可，页面会打开预填好的表单；处理进度也在同一页
+  - name: 反馈处理进度
+    url: https://paltrow-studio.github.io/ShotaPartner-Docs/#progress
+    about: 已收到、排查中、已修复的条数与全部反馈列表
   - name: 讨论区：提问 / 玩法交流 / 不确定是不是 bug
     url: https://github.com/Paltrow-Studio/ShotaPartner-Docs/discussions
     about: 支持类提问请走 Discussions —— issue 区只处理可复现的缺陷与需求

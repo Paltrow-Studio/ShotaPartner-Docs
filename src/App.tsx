@@ -54,7 +54,9 @@ const extraSections = [
   { id: 'reference', title: '按键与物品' },
   { id: 'install', title: '装之前要确认的事' },
   { id: 'faq', title: '常被问到的几件事' },
-  { id: 'feedback', title: '遇到问题，在这里提' },
+  { id: 'feedback', title: '遇到问题，这样告诉我们' },
+  { id: 'progress', title: '反馈处理进度' },
+  { id: 'board', title: '全部反馈' },
 ]
 
 export default function App() {

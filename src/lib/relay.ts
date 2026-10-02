@@ -1,6 +1,4 @@
 import { useCallback, useRef, useState } from 'react'
-import type { IssueTypeId } from '../data/feedback'
-import type { ModuleId } from '../data/modules'
 
 /**
  * 反馈中继客户端（见 relay/README.md）。
@@ -13,11 +11,15 @@ import type { ModuleId } from '../data/modules'
 export type RelayHealth = 'disabled' | 'idle' | 'checking' | 'ok' | 'fail'
 
 export type SubmitInput = {
-  type: IssueTypeId
-  module: ModuleId | 'unknown'
-  summary: string
-  body: string
+  /** 标题：一句话说清现象 */
+  title: string
+  /** 版本：表单「版本」下拉的选项原文 */
+  version: string
+  /** 内容：现象、复现步骤与期望结果 */
+  content: string
+  /** 联系方式，可留空 */
   contact: string
+  /** 标题前缀，例如「[反馈]」 */
   titlePrefix: string
   /** 蜜罐：页面上不可见，只有脚本会填 */
   honeypot: string

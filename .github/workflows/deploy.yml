@@ -46,7 +46,14 @@ jobs:
       - name: 安装依赖（npm ci）
         run: npm ci
 
-      # 执行项目构建脚本（tsc --noEmit && vite build && 内容门禁），产物输出到 dist/
+      # 抓取反馈快照（public/issues.json）：进度区与展示区读它，页面运行时不请求任何外部接口。
+      # 取不到 issue（离线 / 无令牌）时脚本保留既有快照并正常退出，不会阻塞部署。
+      - name: 同步反馈快照
+        run: npm run sync:issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 执行项目构建脚本（tsc --noEmit && vite build && 内容门禁 && 表单同步检查），产物输出到 dist/
       # 内容门禁见 scripts/check-content.mjs 与 README「内容门禁」一节
       - name: 构建站点（npm run build）
         run: npm run build

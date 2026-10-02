@@ -10,7 +10,8 @@
     "check:content": "node scripts/check-content.mjs",
     "check:feedback": "node scripts/check-feedback-sync.mjs",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "sync:issues": "node scripts/sync-issues.mjs"
   },
   "dependencies": {
     "react": "^19.1.0",

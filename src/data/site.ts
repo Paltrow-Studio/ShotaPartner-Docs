@@ -48,4 +48,5 @@ export const navItems: NavItem[] = [
   { id: 'install', label: '安装' },
   { id: 'faq', label: '问答' },
   { id: 'feedback', label: '反馈' },
+  { id: 'progress', label: '进度' },
 ]

@@ -21,13 +21,7 @@ const TITLE_MAX = 120
 const BODY_MAX = 8000
 const MAX_BODY_BYTES = 32 * 1024
 
-const TYPE_LABELS = {
-  bug: ['bug', 'needs-triage'],
-  crash: ['crash', 'needs-triage'],
-  compatibility: ['compatibility', 'needs-triage'],
-  feature: ['enhancement', 'needs-triage'],
-}
-const MODULE_LABELS = { core: 'module:core', api: 'module:api', school: 'module:school' }
+const LABELS = ['needs-triage']
 
 const hits = new Map()
 
@@ -74,29 +68,36 @@ function json(payload, status, headers) {
 
 function validate(input) {
   if (!input || typeof input !== 'object') return { error: '请求体不是 JSON 对象' }
-  const type = String(input.type ?? '')
-  if (!TYPE_LABELS[type]) return { error: 'type 必须是 bug / crash / compatibility / feature' }
-  const moduleId = String(input.module ?? 'unknown')
-  if (moduleId !== 'unknown' && !MODULE_LABELS[moduleId]) return { error: 'module 取值非法' }
+  // 蜜罐：正常用户看不到这个字段，填了就丢弃
   if (String(input.honeypot ?? '').trim() !== '') return { error: '提交被拒绝' }
 
-  const summary = String(input.summary ?? '').replace(/\s+/g, ' ').trim()
-  if (summary.length < 4) return { error: '问题概述至少 4 个字' }
-  if (summary.length > TITLE_MAX) return { error: `问题概述不超过 ${TITLE_MAX} 个字` }
+  const title = String(input.title ?? '').replace(/\s+/g, ' ').trim()
+  if (title.length < 4) return { error: '标题至少 4 个字' }
+  if (title.length > TITLE_MAX) return { error: `标题不超过 ${TITLE_MAX} 个字` }
 
-  const body = String(input.body ?? '').trim()
-  if (body.length < 20) return { error: '正文太短，请至少填写环境与复现步骤' }
-  if (body.length > BODY_MAX) return { error: `正文不超过 ${BODY_MAX} 个字` }
+  const version = String(input.version ?? '').replace(/\s+/g, ' ').trim().slice(0, 60)
+  if (!version) return { error: '请填写版本' }
+
+  const content = String(input.content ?? '').trim()
+  if (content.length < 20) return { error: '内容太短：请写清现象与复现步骤' }
+  if (content.length > BODY_MAX) return { error: `内容不超过 ${BODY_MAX} 个字` }
 
   const contact = String(input.contact ?? '').replace(/\s+/g, ' ').trim().slice(0, 120)
   const prefix = String(input.titlePrefix ?? '').trim().slice(0, 24)
 
-  const title = `${prefix ? `${prefix} ` : ''}${summary}`.slice(0, TITLE_MAX)
-  const labels = [...TYPE_LABELS[type], ...(MODULE_LABELS[moduleId] ? [MODULE_LABELS[moduleId]] : [])]
-  const footer = ['---', `经站点反馈区中继提交（${new Date().toISOString()}）`]
-  if (contact) footer.push(`联系方式：${contact}`)
+  const body = [
+    `### 版本`,
+    version,
+    '',
+    `### 内容`,
+    content,
+    '',
+    '---',
+    `经站点反馈区中继提交（${new Date().toISOString()}）`,
+    ...(contact ? [`联系方式：${contact}`] : []),
+  ].join('\n')
 
-  return { payload: { title, body: `${body}\n\n${footer.join('\n')}`, labels } }
+  return { payload: { title: `${prefix ? `${prefix} ` : ''}${title}`.slice(0, TITLE_MAX), body, labels: [...LABELS] } }
 }
 
 export default {

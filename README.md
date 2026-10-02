@@ -61,6 +61,7 @@ src/
 │  └─ relay.ts           # 反馈中继客户端（未配置地址时不发请求）
 ├─ components/
 │  ├─ Nav / Hero / Contents / Roster / Reference / Install / Faq / Feedback / Footer
+│  ├─ IssueBoard.tsx      # 进度区 + 展示区（状态统计、进度条、统一格式的反馈列表）
 │  ├─ Guide.tsx           # 玩法章节渲染器（按 data/guide.ts 的块类型渲染）
 │  └─ paper.tsx           # 纸面基础件：行内标记解析、Sheet、章节标题、批注
 └─ data/                  # ★ 所有文案与内容都在这里，改内容基本只动这层
@@ -70,7 +71,7 @@ src/
    ├─ reference.ts        # 按键、物品、方块、状态效果
    ├─ modules.ts          # 三个 jar 的版本与前置
    ├─ faq.ts              # 常见问题
-   ├─ feedback.ts         # 反馈类型、模块选项、issue 表单深链
+   ├─ feedback.ts         # 反馈表单、版本选项、提交深链、进度状态与统计
    └─ types.ts            # 章节数据结构
 
 relay/
@@ -78,6 +79,15 @@ relay/
 ├─ worker.js              # 同一接口的 Cloudflare Worker 版
 ├─ selftest.mjs           # 中继自测（11 项，不需要令牌）
 └─ README.md              # 部署、令牌权限、安全与自测说明
+
+scripts/
+├─ check-content.mjs      # 内容门禁：扫描 src/ 与 dist/
+├─ check-feedback-sync.mjs# 由 data/feedback.ts 生成并校验 feedback.yml
+├─ sync-issues.mjs        # 抓取 issue → public/issues.json（进度区数据）
+└─ make-icons.py          # 站点图标 / 分享图
+
+public/
+└─ issues.json            # 反馈快照（构建时生成，页面同源读取，不请求外部接口）
 ```
 
 ### 内容维护指引
@@ -90,19 +100,22 @@ relay/
 | 版本号与前置依赖 | `src/data/modules.ts` |
 | 导航、首屏文案 | `src/data/site.ts` |
 | 常见问题 | `src/data/faq.ts` |
-| 反馈类型 / 模块选项 / 预填逻辑 | `src/data/feedback.ts`（**反馈表单的唯一来源**，Issue 表单与它同步） |
-| GitHub Issue 表单 | `.github/ISSUE_TEMPLATE/*.yml`，以 `src/data/feedback.ts` 为准；`npm run check:feedback` 校验 |
+| 反馈表单、版本选项、进度状态 | `src/data/feedback.ts`（**唯一来源**，`feedback.yml` 由它生成） |
+| GitHub Issue 表单 | `.github/ISSUE_TEMPLATE/feedback.yml`，改站点后跑 `npm run check:feedback -- --write` 重新生成 |
+| 反馈快照（进度区数据） | `npm run sync:issues` 抓取；`public/issues.json` 由脚本生成，不要手改 |
 | 反馈中继地址、国内备用入口 | `src/data/site.ts`（`FEEDBACK_RELAY_URL` / `FALLBACK_FEEDBACK_URL` / `SITE_MIRROR_URL`） |
 | 反馈中继服务 | `relay/`（部署与安全说明见 `relay/README.md`） |
 | 配色、纸面质感、字体 | `src/index.css`（`:root` 与 `[data-theme='dark']` 两套变量） |
 | 主题默认时段（按国内时间自动切换） | `src/lib/theme.ts` 的 `DAY_START_HOUR` / `DAY_END_HOUR`，与 `index.html` 内联脚本两处同步 |
 | 站点图标 / 分享图 | `scripts/make-icons.py` 重新生成，见下节 |
 | 内容门禁（收录范围与词表） | `scripts/check-content.mjs`，见「内容门禁」一节；词表以 base64 存放 |
+| 进度区的状态与配色 | `src/data/feedback.ts` 的 `issueStatuses`（标签 → 状态的映射在 `scripts/sync-issues.mjs`） |
 
 `guide.ts` 里每章由若干内容块组成，可用的 `kind`：
 `p`（段落，支持 `` `代码` ``、`**加粗**`、`[文字](链接)`）、`sub`（小标题）、`list`、`steps`、`keys`、`table`、`note`（批注）。
 
 改动后请跑一次 `npm run build`（含类型检查、内容门禁与表单同步检查）再提交；CI 会用同样的命令构建。
+反馈快照不在构建里抓取（离线也能构建）；需要新数据时跑 `npm run sync:issues`，CI 在部署前会自动执行。
 
 ## 站点图标
 
@@ -216,39 +229,59 @@ node relay/selftest.mjs   # 11 项：校验、标签映射、蜜罐、来源白�
 
 填好后跑一次 `npm run build` 即可，无需改动组件代码。
 
-## 反馈区（issue 区）说明
+## 反馈区、进度区与展示区
 
-四个 Issue Form 都在 [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE)：
+页面上有三块，都只依赖静态文件和 GitHub 官方表单，不需要自建后端：
 
-| 模板 | 适用情况（与站点反馈区一致） | 自动标签 |
+| 区块 | 位置 | 作用 |
 | --- | --- | --- |
-| 缺陷报告 | 可以游玩，但存在异常 | `bug`, `needs-triage` |
-| 崩溃与启动失败 | 无法进入或直接崩溃 | `crash`, `needs-triage` |
-| 兼容性 / 服务端 / 整合包 | 单独安装正常，加入其它内容后异常 | `compatibility`, `needs-triage` |
-| 功能建议 | 需要提交功能想法 | `enhancement`, `needs-triage` |
+| 反馈提交区 | `#feedback` | 四项输入：标题、版本、内容、截图（可选），生成预填好的 GitHub 表单深链 |
+| 进度区 | `#progress` | 各状态的条数、占比与进度条，说明每种状态的含义 |
+| 展示区 | `#board` | 按统一格式列出全部反馈，可按状态筛选，带缩略图 |
 
-每个模板的第一个字段都是**涉及模块**（Core / API / Extra-School / 不确定），用于分流。
+四套旧模板（缺陷 / 崩溃 / 兼容 / 建议）已合并为**一张** [`.github/ISSUE_TEMPLATE/feedback.yml`](.github/ISSUE_TEMPLATE/feedback.yml)：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| 标题 | 表单标题栏 | 站点深链预填 `[反馈] <标题>` |
+| 版本 | `dropdown` | `0.3.1（当前版本）`、整合包内附带的版本、更早的版本、不确定 |
+| 内容 | `textarea` | 现象、复现步骤、期望结果 |
+| 截图 / 录屏 | `upload` | GitHub 原生上传（图片 10 MB、视频 100 MB 以内） |
+
+问题属于哪一类、涉及哪个模块，**不再要求玩家选择**：由维护者看内容判断并补 `bug` / `crash` / `compatibility` / `enhancement` 与模块标签。表单默认只带 `needs-triage`。
 
 ### 表单与站点同步
 
-Issue 表单与站点反馈区（[`src/data/feedback.ts`](src/data/feedback.ts)）严格一致，**以站点为准**：类型名称与描述、标题前缀、自动标签、涉及模块选项、各类问题的字段标签与顺序（「环境」展开为模组版本 / Forge 版本 / 运行环境 / Java 版本 / 是否使用整合包 / 模组列表）、「提交前自检」条目，以及「不予受理的情况」，全部由站点定义。
+[`src/data/feedback.ts`](src/data/feedback.ts) 是唯一来源：表单名、说明、标题前缀、标签、版本选项、内容提示、截图说明、提交须知都写在里面。
 
 ```bash
-npm run check:feedback   # 单独跑；不一致即退出码 1，并逐条打印差异
+npm run check:feedback              # 校验；不一致即退出码 1
+npm run check:feedback -- --write   # 改完站点数据后重新生成 feedback.yml
 ```
 
-- 校验由 [scripts/check-feedback-sync.mjs](scripts/check-feedback-sync.mjs) 执行，已挂在 `npm run build` 上，两边任何一处漂移都会让构建失败。
-- 只改 `.github/ISSUE_TEMPLATE/*.yml` 而不改站点，或反过来，都会被拦下；表单分组只允许出现站点也有的「环境」与「不予受理的情况」。
-- 模板名与站点类型名逐字相同，不带 emoji 等站点没有的装饰；模板描述是站点「适用场景 + 说明」两句的拼接（GitHub 选择页每条只能用一行说明），表单顶部还有一处「适用场景」说明块。
-- 站点链接只预填模板与标签，**不预填标题**：标题沿用模板默认值，因此「从站点链接进入」与「从 GitHub 的 Create new issue 进入」得到的标题一致；涉及模块由表单下拉记录。校验脚本会拦住重新加回标题预填。
-- 站点的模块选项、以及步骤三里那份「GitHub 表单会按这个顺序逐项询问」的字段清单，都由 `src/data/feedback.ts` 派生，与表单逐字对应。
+校验由 [scripts/check-feedback-sync.mjs](scripts/check-feedback-sync.mjs) 执行，已挂在 `npm run build` 上：文件多出第二张表单、表单与站点数据不一致、或深链漏掉标题 / 版本 / 内容任一预填，构建都会失败。版本选项里的本体版本号取自 [`src/data/modules.ts`](src/data/modules.ts)，改版本号后重新生成即可。
 
-**维护者注意**：模板里的 `labels` 必须已存在于本仓库，否则 GitHub 会静默忽略。当前需要的标签：
-`needs-triage`、`bug`、`crash`、`compatibility`、`enhancement`、`question`、`documentation`、`duplicate`、`wontfix`、`good first issue`，
+**维护者注意**：表单里的 `labels` 必须已存在于本仓库，否则 GitHub 会静默忽略。表单只带 `needs-triage`，分类标签由维护者按内容补：
+`bug`、`crash`、`compatibility`、`enhancement`、`question`、`documentation`、`duplicate`、`wontfix`、`good first issue`，
 以及模块标签 `module:core`、`module:api`、`module:school`、`module:docs`。
 
-页面上的反馈向导不调用任何后端：它用 GitHub 官方的 issue 表单深链
-（`issues/new?template=...&title=...&labels=...`）生成预填链接，玩家在 GitHub 上完成提交，因此**不需要任何 token 或代理服务**。
+### 反馈快照
+
+进度区与展示区读的是 `public/issues.json`，由 [scripts/sync-issues.mjs](scripts/sync-issues.mjs) 在部署前抓取：
+
+```bash
+npm run sync:issues   # 有 GH_TOKEN / GITHUB_TOKEN 走 REST API，否则用本机 gh CLI
+```
+
+- 归一化：旧模板提交的 issue 标题带 `[Bug] [Core]` 前缀、正文是 `### 字段` 分段，脚本会去掉前缀、取出「模组版本」与「实际结果 / 复现步骤」等段落，压成标题 / 版本 / 内容 / 截图 / 状态 / 时间。
+- 状态取自 issue 标签：`已修复` / `fixed` → 已修复，`排查中` / `待排查` → 排查中，`已关闭` / `wontfix` → 已关闭，其余为待处理。
+- 取不到数据（离线、无凭据）时脚本保留既有快照并正常退出，不会阻塞构建。
+- 页面从同源读快照，**运行时不发任何外部请求**，所以国内访问不需要代理。
+- 玩家提交的原文会随快照进入 `dist/issues.json`，内容门禁按路径跳过这个文件（见「内容门禁」一节）。
+
+页面上的提交按钮不调用任何后端：它用 GitHub 官方的 issue 表单深链
+（`issues/new?template=feedback.yml&title=…&version=…&content=…`）生成预填链接，因此**不需要 token 或代理服务**。
+配置 `FEEDBACK_RELAY_URL` 后，`relay/` 会额外提供「无需 GitHub 账号」的直接提交入口（中继服务端只接受标题 / 版本 / 内容，标签固定为 `needs-triage`）。
 
 ## 许可
 
