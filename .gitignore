@@ -12,3 +12,6 @@ npm-debug.log*
 # ── Python 缓存（scripts/ 下的脚本运行产生，禁止入库） ──
 __pycache__/
 *.py[cod]
+
+# ── 反馈服务的运行时数据（玩家提交的记录与截图，禁止入库） ──
+service/data/

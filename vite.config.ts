@@ -15,6 +15,14 @@ export default defineConfig({
     assetsDir: 'assets',
     sourcemap: false,
     target: 'es2020',
+    rollupOptions: {
+      // 两个页面：玩法说明（index.html）与独立成页的反馈区（feedback.html）。
+      // 相对路径由 Vite 依 root 解析，这样不需要引入 node 类型。
+      input: {
+        main: 'index.html',
+        feedback: 'feedback.html',
+      },
+    },
   },
   server: {
     port: 5173,

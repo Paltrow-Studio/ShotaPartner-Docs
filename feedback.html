@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon-32.png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <title>反馈区 · 伙伴物语 Partner Monogatari</title>
+    <meta
+      name="description"
+      content="伙伴物语的反馈区：填标题、版本、内容，可选附截图，不需要注册账号。提交后拿到编号，进度区按待处理 / 排查中 / 已修复 / 已关闭更新。"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f3eee2" />
+    <meta name="keywords" content="伙伴物语, Partner Monogatari, 问题反馈, 提交反馈, 反馈进度, Minecraft, Forge" />
+    <link rel="canonical" href="https://paltrow-studio.github.io/ShotaPartner-Docs/feedback.html" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="伙伴物语 Partner Monogatari" />
+    <meta property="og:title" content="反馈区 · 伙伴物语 Partner Monogatari" />
+    <meta
+      property="og:description"
+      content="不需要账号：填标题、版本、内容，可选附截图，提交后拿到编号并在进度区跟踪。"
+    />
+    <meta property="og:url" content="https://paltrow-studio.github.io/ShotaPartner-Docs/feedback.html" />
+    <meta property="og:image" content="https://paltrow-studio.github.io/ShotaPartner-Docs/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="伙伴物语反馈区" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <script>
+      // 主题在首屏绘制前定好，避免白闪 / 黑闪。判定规则与 index.html、
+      // src/lib/theme.ts 完全一致：localStorage 中的显式选择优先，否则按国内时间。
+      ;(function () {
+        var COLORS = { light: '#f3eee2', dark: '#191713' }
+        function chinaHour() {
+          try {
+            var parts = new Intl.DateTimeFormat('en-US', {
+              timeZone: 'Asia/Shanghai',
+              hour: '2-digit',
+              hour12: false,
+            }).formatToParts(new Date())
+            for (var i = 0; i < parts.length; i++) {
+              if (parts[i].type === 'hour') return Number(parts[i].value) % 24
+            }
+          } catch (e) {
+            /* 缺少时区数据时用固定偏移 */
+          }
+          return (new Date().getUTCHours() + 8) % 24
+        }
+        var theme
+        try {
+          var saved = localStorage.getItem('sp-theme')
+          if (saved === 'light' || saved === 'dark') theme = saved
+        } catch (e) {
+          /* 隐私模式下读不到，按时间判定 */
+        }
+        if (!theme) {
+          var hour = chinaHour()
+          theme = hour >= 6 && hour < 18 ? 'light' : 'dark'
+        }
+        document.documentElement.dataset.theme = theme
+        var meta = document.querySelector('meta[name="theme-color"]')
+        if (meta) meta.setAttribute('content', COLORS[theme])
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/feedback/main.tsx"></script>
+  </body>
+</html>

@@ -1,26 +1,21 @@
 # 伙伴物语 / Partner Monogatari —— Issue 模板总配置
 #
 # 注意事项（维护者请先读）：
-#   1. 本文件位于仓库的 .github/ 目录下，属于「仓库级模板」，会整体覆盖组织级（Paltrow-Studio/.github）
-#      的同名模板。也就是说：本仓库的模板一旦存在，组织级 Issue 模板就不会再生效；
-#      若希望某些模板沿用组织级，需要把对应文件删掉或在这里显式补齐。
-#   2. contact_links 与 Issue Form 里用到的 labels（needs-triage）必须已经存在于本仓库
-#      （标签不存在时 GitHub 会静默忽略，不会报错）。
-#      只有一张表单 feedback.yml，字段为标题 / 版本 / 内容 / 截图；分类由维护者补标签。
-#      站点（src/data/feedback.ts）是唯一来源，改动后运行
-#      node scripts/check-feedback-sync.mjs --write 重新生成。
-#   3. 关闭 blank issue 是有意为之：issue 区只处理可复现的缺陷与需求，支持类提问请走 Discussions。
-#   4. 三个模组仓库（ShotaPartner-Core / ShotaPartner-API / ShotaPartner-Extra-School）目前是私有的，
-#      玩家的公开反馈统一提交到本 Docs 仓库。
+#   1. 反馈区已经独立成页（feedback.html），**不再使用 GitHub 的 Issue 表单**：
+#      玩家不需要 GitHub 账号，填标题 / 版本 / 内容（可选截图）即可，数据由自建反馈服务
+#      （service/）保存。本目录下已没有任何 Issue 模板，玩家在这里只能看到下面的联系链接。
+#   2. blank_issues_enabled: false 是有意为之：GitHub 的 issue 通道对普通玩家来说门槛太高
+#      （要账号、要填环境表）。已有的历史 issue 保留在仓库里供查询，新反馈一律走站点。
+#   3. 三个模组仓库（ShotaPartner-Core / ShotaPartner-API / ShotaPartner-Extra-School）目前是私有的。
 
 blank_issues_enabled: false
 contact_links:
-  - name: 站点：功能介绍 / 提交反馈 / 查看进度
-    url: https://paltrow-studio.github.io/ShotaPartner-Docs/#feedback
-    about: 在浏览器里填标题、版本、内容即可，页面会打开预填好的表单；处理进度也在同一页
-  - name: 反馈处理进度
-    url: https://paltrow-studio.github.io/ShotaPartner-Docs/#progress
-    about: 已收到、排查中、已修复的条数与全部反馈列表
-  - name: 讨论区：提问 / 玩法交流 / 不确定是不是 bug
+  - name: 反馈区：提交反馈 / 查看进度 / 全部记录
+    url: https://paltrow-studio.github.io/ShotaPartner-Docs/feedback.html
+    about: 不需要 GitHub 账号。填标题、版本、内容，有截图就拖进来，提交后拿到编号
+  - name: 玩法说明文档
+    url: https://paltrow-studio.github.io/ShotaPartner-Docs/
+    about: 伙伴获取与养成、技能与轮盘、战斗 AI、工作与后勤、学校维度
+  - name: 讨论区：提问 / 玩法交流 / 不确定是不是问题
     url: https://github.com/Paltrow-Studio/ShotaPartner-Docs/discussions
-    about: 支持类提问请走 Discussions —— issue 区只处理可复现的缺陷与需求
+    about: 安装与配置类提问、玩法讨论请走 Discussions

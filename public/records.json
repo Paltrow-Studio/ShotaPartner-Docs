@@ -1,0 +1,275 @@
+{
+  "generatedAt": "2026-10-02T23:32:36.784Z",
+  "records": [
+    {
+      "id": "F-0008",
+      "title": "模型碰撞箱问题、盘点问题、键盘锁死、坚守者攻击后伙伴下盘问题 可能存在的偶发性人物模组穿模 错位",
+      "version": "0.3.1",
+      "content": "实际可能因为角色碰撞箱体问题导致无法交互；在狭窄的竖直空间（比如向下垂直挖矿，如果伙伴NPC从头落下会导致键盘锁死，无法挖掘和互动任何物品，只会显示攻击冷却条 猜测: 大部分的bug导致是由于在建模人物模型时 因为要给模型外面增加立体图层 所以会产生不必要的碰撞箱体积 同伴NPC盘点的话如果是竖直方向出现怪物（例如脚底下有个骷）同伴NPC就会原地转圈 角色涵盖动作动画的3D模型，如果收到坚守者的远程炮击就会导致模型下盘错误，老师可以检查一下",
+      "images": [
+        "https://github.com/user-attachments/assets/cd8c9e33-dfab-434b-86d8-a75c55579593",
+        "https://github.com/user-attachments/assets/e86361ea-e6da-4656-92ae-01bab8230d55"
+      ],
+      "status": "pending",
+      "createdAt": "2026-10-01T13:40:41Z",
+      "updatedAt": "2026-10-01T13:40:41Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/8"
+    },
+    {
+      "id": "F-0009",
+      "title": "人物坐下动作缓慢 走路姿势缓慢 影响模组游戏体验",
+      "version": "0.3.1",
+      "content": "人物坐下动作缓慢 走路姿势缓慢 影响模组游戏体验；正常游玩",
+      "images": [],
+      "status": "pending",
+      "createdAt": "2026-10-01T13:47:57Z",
+      "updatedAt": "2026-10-01T13:47:57Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/9"
+    },
+    {
+      "id": "F-0010",
+      "title": "白名单拾取和攻击白名单生物",
+      "version": "0.3.1",
+      "content": "全拾取；正常游玩",
+      "images": [],
+      "status": "pending",
+      "createdAt": "2026-10-01T13:50:02Z",
+      "updatedAt": "2026-10-01T13:50:02Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/10"
+    },
+    {
+      "id": "F-0011",
+      "title": "UI错位或者按钮失效 效果与预期不符合 UI自适应屏幕",
+      "version": "0.3.1",
+      "content": "UI错位或者按钮失效 效果与预期不符合 UI自适应屏幕；正常游玩",
+      "images": [],
+      "status": "pending",
+      "createdAt": "2026-10-01T13:59:54Z",
+      "updatedAt": "2026-10-01T13:59:54Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/11"
+    },
+    {
+      "id": "F-0012",
+      "title": "整合包中lightspeed运行报错",
+      "version": "0.3.1",
+      "content": "启动时 FancyMenu 报错 UncheckedIOException: Failed to enumerate archived resource pack ''，堆栈跟踪指向 java.util.zip.ZipFile 初始化失败。；直接启动运行游戏。；专用服务端专有问题",
+      "images": [],
+      "status": "pending",
+      "createdAt": "2026-10-01T14:03:54Z",
+      "updatedAt": "2026-10-01T14:03:54Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/12"
+    },
+    {
+      "id": "F-0013",
+      "title": "游戏过程中屏幕右侧出现 UI 元素遮挡玩家视线，不一定是十字线。",
+      "version": "0.3.1",
+      "content": "屏幕上有多余元素。 <img width=\"2400\" height=\"1080\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/e74abb8d-f058-4c57-8d19-43d4edc2332d\" />；正常进入游戏。；其它（见补充说明）",
+      "images": [
+        "https://github.com/user-attachments/assets/e74abb8d-f058-4c57-8d19-43d4edc2332d"
+      ],
+      "status": "pending",
+      "createdAt": "2026-10-01T15:20:07Z",
+      "updatedAt": "2026-10-01T15:20:07Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/13"
+    },
+    {
+      "id": "F-0014",
+      "title": "加入按键冲突显示模组",
+      "version": "不确定",
+      "content": "整合包中有大量的快捷键重复与冲突，希望能够加入按键冲突显示模组。；PCL中可以下到的现成的模组直接放入整合包中，无兼容性问题。",
+      "images": [],
+      "status": "pending",
+      "createdAt": "2026-10-01T15:27:41Z",
+      "updatedAt": "2026-10-01T15:27:41Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/14"
+    },
+    {
+      "id": "F-0015",
+      "title": "加入 Luki's Grand Capitals 模组",
+      "version": "不确定",
+      "content": "将 Luki's Grand Capitals 模组加入整合包，并完成兼容性测试。；把原力普通的村庄 产生一些变种。 比如说村民的要塞 和一些主城市（类似雪漫城那种）而且每一个群系的村庄都有巨大的优化，跟符合环境的设计。 掠夺者方面 哨塔得到了升级，而且新增了掠夺者城堡等建筑。 <img width=\"460\" height=\"365\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/6fd6173b-f…",
+      "images": [
+        "https://github.com/user-attachments/assets/6fd6173b-f3ae-476e-8d77-c4edcebb5140"
+      ],
+      "status": "pending",
+      "createdAt": "2026-10-01T15:31:05Z",
+      "updatedAt": "2026-10-01T15:31:05Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/15"
+    },
+    {
+      "id": "F-0016",
+      "title": "F键打开轮盘后，1-8键释放技能无效。",
+      "version": "0.3.1",
+      "content": "F键打开轮盘后，1-8键释放技能无效。；F键打开轮盘后，1-8键释放技能。；原始提交者: HiroHonger 原始提交时间: 2026-08-31 新版本需要进行测试，以确保这个效果被修复。",
+      "images": [],
+      "status": "pending",
+      "createdAt": "2026-10-01T15:34:33Z",
+      "updatedAt": "2026-10-01T15:34:33Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/16"
+    },
+    {
+      "id": "F-0017",
+      "title": "伙伴技能F键打开后，轮盘的头像槽位，理应绿色是就绪，红色是在CD，灰色是不可用，但是现在状态是统一都是蓝色",
+      "version": "0.3.1",
+      "content": "现在状态是统一都是蓝色。；1、伙伴技能F键打开； 2、查看轮盘的头像槽位。；原始提交者: HiroHonger， 原始提交时间: 2026-08-31， 需要进行测试以确保已经都修复过。",
+      "images": [],
+      "status": "pending",
+      "createdAt": "2026-10-01T15:37:06Z",
+      "updatedAt": "2026-10-01T15:37:06Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/17"
+    },
+    {
+      "id": "F-0018",
+      "title": "打开技能轮盘后，进行升星/加点技能急速后，显示的CD还是原始不加点的技能CD",
+      "version": "0.3.1",
+      "content": "显示的CD还是原始不加点的技能CD。；1、打开技能轮盘， 2、进行升星/加点技能急速；；原始提交者: HiroHonger， 原始提交时间: 2026-08-31， 需要测试以确保最新版本已经修复该问题。",
+      "images": [],
+      "status": "pending",
+      "createdAt": "2026-10-01T15:44:56Z",
+      "updatedAt": "2026-10-01T15:44:56Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/18"
+    },
+    {
+      "id": "F-0019",
+      "title": "任务书包含其他整合包（mce2）的奖励物品引用",
+      "version": "0.3.1",
+      "content": "任务书奖励栏显示未本地化的物品键名 （FTB Quests 集成）； 该奖励物品属于另一整合包 mce2（非本模组内容），不应保留在本模组任务书中。 <img width=\"360\" height=\"218\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/d3a6e09b-f465-4d45-bd09-321ba773b889\" />；调出任务书奖励栏；",
+      "images": [
+        "https://github.com/user-attachments/assets/d3a6e09b-f465-4d45-bd09-321ba773b889"
+      ],
+      "status": "pending",
+      "createdAt": "2026-10-01T15:51:36Z",
+      "updatedAt": "2026-10-01T15:51:36Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/19"
+    },
+    {
+      "id": "F-0020",
+      "title": "竖直空间伙伴NPC碰撞箱过大导致玩家键盘锁死",
+      "version": "0.3.1",
+      "content": "玩家键盘锁死，无法进行挖掘和任何互动操作，界面仅显示攻击冷却条。；1、找到或挖掘一条仅1格宽的竖直通道； 2、让伙伴NPC从上方落下进入同一格； 3、尝试挖掘或互动。；根因分析：伙伴NPC模型外层的立体图层增加了不必要的碰撞箱体积，在竖直空间与玩家碰撞箱重叠时触发此问题。 备注：与村民等其他实体同格时无此问题，说明碰撞箱逻辑有特异性。 <img width=\"1212\" height=\"900\" alt=\"Image\" src=\"https://github.com/user…",
+      "images": [
+        "https://github.com/user-attachments/assets/ea6286b0-8b4c-4f49-9f2d-6168777f5d21"
+      ],
+      "status": "pending",
+      "createdAt": "2026-10-01T16:06:12Z",
+      "updatedAt": "2026-10-01T16:06:12Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/20"
+    },
+    {
+      "id": "F-0021",
+      "title": "点击响应错位：从「升星配置」按钮开始所有向下按钮全部偏移",
+      "version": "0.3.1",
+      "content": "从「升星配置」按钮开始，点击已不在对应按钮的功能区域上，往下的所有按钮均出现点击响应错位。；1、升星配置界面中，从「升星配置」按钮起，所有下方按钮依次点击； 2、命中区域整体向下偏移，导致用户无法正常操作对应功能。；可能与 UI 布局或滚动容器坐标计算有关。 需检查升星配置界面各按钮的 hitbox 或布局锚点。",
+      "images": [],
+      "status": "pending",
+      "createdAt": "2026-10-01T16:49:13Z",
+      "updatedAt": "2026-10-01T16:49:13Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/21"
+    },
+    {
+      "id": "F-0022",
+      "title": "眼睛类物品图标遮挡物品栏按钮",
+      "version": "0.3.1",
+      "content": "物品栏界面中，某种\"眼睛\"类物品的图标会遮挡住按钮，影响玩家点击操作。；打开物品栏界面；；具体表现：打开背包/物品栏时，眼睛类物品（可能为模组添加的装备或道具）的图标层级过高，覆盖了本应可点击的按钮区域。 需检查该物品在物品栏中的渲染层级（z-order / blit 顺序）。 可能与该物品的 NBT 数据或特殊渲染逻辑有关。",
+      "images": [
+        "https://github.com/user-attachments/assets/cb0fb140-d82e-4075-9f65-2a9cf0b2a64d"
+      ],
+      "status": "pending",
+      "createdAt": "2026-10-01T17:00:53Z",
+      "updatedAt": "2026-10-01T17:00:53Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/22"
+    },
+    {
+      "id": "F-0023",
+      "title": "坚守者远程攻击导致3D动作模型下盘错误",
+      "version": "0.3.1",
+      "content": "角色装备动作动画的3D模型在受到坚守者（Warden）远程音波攻击时，下盘部位出现模型错误/显示异常。；坚守者发动远程炮击攻击玩家。",
+      "images": [],
+      "status": "pending",
+      "createdAt": "2026-10-01T17:05:30Z",
+      "updatedAt": "2026-10-01T17:05:30Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/23"
+    },
+    {
+      "id": "F-0024",
+      "title": "挖木头直接掉落统一木材而非原木（需确认来源）",
+      "version": "0.3.1",
+      "content": "挖掘木头时直接掉落统一加工的木材，而非原本的原木方块。；挖掘木头；；其它（见补充说明）；待确认：该行为是模组设计还是整合包配置所致。 问题：压缩建筑用原材料的选择空间。",
+      "images": [],
+      "status": "pending",
+      "createdAt": "2026-10-01T17:10:45Z",
+      "updatedAt": "2026-10-01T17:10:45Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/24"
+    },
+    {
+      "id": "F-0025",
+      "title": "潜行键提示文案未跟随玩家自定义按键映射",
+      "version": "0.3.1",
+      "content": "文案固定为默认按键，不随玩家设置变化。；将伙伴加入队伍；；下蹲是ctrl，但是这里显示的还是shift。",
+      "images": [
+        "https://github.com/user-attachments/assets/d6297689-6b0c-4a81-9653-9d76ef4333bb"
+      ],
+      "status": "pending",
+      "createdAt": "2026-10-01T17:18:58Z",
+      "updatedAt": "2026-10-01T17:18:58Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/25"
+    },
+    {
+      "id": "F-0026",
+      "title": "掉落物自动捡起筛选（黑白名单机制）",
+      "version": "0.3.1",
+      "content": "默认全部附近物品捡拾。；伙伴打开自动捡拾物品，且其附近有掉落物品；；细化场景： 重要物品保护：某些关键物品（如任务道具、稀有掉落）不应被NPC自动拾取，需留给玩家 垃圾过滤：石砾、腐肉等低价值物品不应占用NPC背包 智能筛选：根据物品价值/稀有度/任务关联度自动判断 建议实现： 全局配置：默认行为（全部拾取 / 仅白名单 / 排除黑名单） 物品标签：基于物品ID/NBT标签/模组来源的过滤规则 优先级：白名单 > 黑名单 > 默认规则",
+      "images": [],
+      "status": "pending",
+      "createdAt": "2026-10-01T17:24:26Z",
+      "updatedAt": "2026-10-01T17:24:26Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/26"
+    },
+    {
+      "id": "F-0027",
+      "title": "伙伴信物复活后UI血量显示为0（应为满血）",
+      "version": "0.3.1",
+      "content": "UI 上显示的血量为 0。；1、伙伴死亡； 2、使用伙伴信物复活伙伴。",
+      "images": [
+        "https://github.com/user-attachments/assets/47f3449a-2ed6-4a60-b583-df4e59480d4c"
+      ],
+      "status": "pending",
+      "createdAt": "2026-10-01T17:26:28Z",
+      "updatedAt": "2026-10-01T17:26:28Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/27"
+    },
+    {
+      "id": "F-0028",
+      "title": "伙伴死亡后墓碑丢失导致无法复活（需增加复活途径）",
+      "version": "0.3.1",
+      "content": "一旦墓碑丢失且无信息栏记录，玩家没有任何途径复活伙伴。；1、伙伴死亡； 2、死亡后遭遇网络波动、或者瞬间切换维度等意外情况； 3、墓碑消失，信息栏出现伙伴死亡异常，没有墓碑的提示。；当前机制缺陷： 信息栏中虽有「强制复活」选项，但信息被刷掉后该选项不可复现 一旦墓碑丢失且无信息栏记录，玩家没有任何途径复活伙伴 这会导致伙伴永久丢失，严重影响游戏进程 触发条件： 网络波动导致死亡时墓碑未正常生成 玩家手贱敲掉墓碑 信息栏消息被后续事件冲刷 需求：为伙伴增加独立于墓碑和信息栏的复…",
+      "images": [],
+      "status": "pending",
+      "createdAt": "2026-10-01T17:30:43Z",
+      "updatedAt": "2026-10-01T17:30:43Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/28"
+    },
+    {
+      "id": "F-0029",
+      "title": "竖直方向出现怪物时同伴NPC原地转圈",
+      "version": "0.3.1",
+      "content": "同伴NPC会原地转圈而非正常应对。；当同伴NPC盘点（patrol）状态下，竖直方向（如脚下）出现怪物（例如骷髅）;；场景：NPC在巡逻/待机时，垂直方向感知到敌对生物后的路径规划异常。",
+      "images": [],
+      "status": "pending",
+      "createdAt": "2026-10-01T17:34:54Z",
+      "updatedAt": "2026-10-01T17:34:54Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/29"
+    },
+    {
+      "id": "F-0030",
+      "title": "官方整合包内 mofus_better_end_ 多个按键处理器未判空，加载界面按键即 NPE 崩溃（两次复现）",
+      "version": "0.3.1",
+      "content": "客户端生成崩溃报告并直接退出。两次独立启动各崩溃一次，分别命中 MofusBetterEndModKeyMappings$2（第 61 行） 与 $6（第 133 行）两个不同的按键处理器，异常均为 Minecraft.getConnection() 返回 null 时的 NPE。；1. 使用官方整合包「伙伴物语内测版」启动客户端 2. 停留在加载界面（实测为启动后约 55 秒，仍在资源重载阶段，尚未到主菜单） 3. 按 Ctrl（或 Z / V / W / A / D /…",
+      "images": [],
+      "status": "pending",
+      "createdAt": "2026-10-02T14:39:03Z",
+      "updatedAt": "2026-10-02T14:39:03Z",
+      "legacyUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/30"
+    }
+  ]
+}

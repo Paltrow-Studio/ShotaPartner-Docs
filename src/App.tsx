@@ -7,7 +7,7 @@ import { Roster } from './components/Roster'
 import { Reference } from './components/Reference'
 import { Install } from './components/Install'
 import { Faq } from './components/Faq'
-import { Feedback } from './components/Feedback'
+import { FeedbackTeaser } from './components/FeedbackTeaser'
 import { Footer } from './components/Footer'
 import { chapters } from './data/guide'
 import { faqItems } from './data/faq'
@@ -55,8 +55,6 @@ const extraSections = [
   { id: 'install', title: '装之前要确认的事' },
   { id: 'faq', title: '常被问到的几件事' },
   { id: 'feedback', title: '遇到问题，这样告诉我们' },
-  { id: 'progress', title: '反馈处理进度' },
-  { id: 'board', title: '全部反馈' },
 ]
 
 export default function App() {
@@ -90,7 +88,7 @@ export default function App() {
         <Reference />
         <Install />
         <Faq />
-        <Feedback />
+        <FeedbackTeaser />
       </main>
       <Footer />
       <BackToTop />

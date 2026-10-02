@@ -1,4 +1,4 @@
-import { DISCUSSIONS, GITHUB_REPO, ISSUES, ORG_URL } from '../data/site'
+import { DISCUSSIONS, FEEDBACK_PAGE, GITHUB_REPO, ORG_URL } from '../data/site'
 
 export function Footer() {
   return (
@@ -11,8 +11,8 @@ export function Footer() {
               Partner Monogatari
             </p>
             <p className="mt-3 text-[0.84rem] leading-relaxed text-ink-soft">
-              模组由 Paltrow Studio 开发。三个模组仓库暂未公开，本页所在仓库对所有人开放，
-              问题可在此提交。
+              模组由 Paltrow Studio 开发。三个模组仓库暂未公开，本页所在仓库对所有人开放；
+              反馈区不需要账号，填完即可提交。
             </p>
           </div>
 
@@ -20,16 +20,15 @@ export function Footer() {
             <p className="num uppercase tracking-[0.16em] text-ink-faint">链接</p>
             <ul className="mt-3 space-y-1.5">
               {[
-                { href: ISSUES, label: '问题反馈（Issues）' },
-                { href: DISCUSSIONS, label: '讨论区（Discussions）' },
-                { href: GITHUB_REPO, label: '本仓库' },
-                { href: ORG_URL, label: 'Paltrow Studio' },
+                { href: FEEDBACK_PAGE, label: '反馈区（提交与进度）', external: false },
+                { href: DISCUSSIONS, label: '讨论区（Discussions）', external: true },
+                { href: GITHUB_REPO, label: '本仓库', external: true },
+                { href: ORG_URL, label: 'Paltrow Studio', external: true },
               ].map((link) => (
                 <li key={link.href}>
                   <a
                     href={link.href}
-                    target="_blank"
-                    rel="noreferrer noopener"
+                    {...(link.external ? { target: '_blank', rel: 'noreferrer noopener' } : {})}
                     className="link-quiet inline-block py-1 text-ink-soft"
                   >
                     {link.label}

@@ -26,7 +26,9 @@
 ## 技术栈与本地开发
 
 Vite + React 19 + TypeScript + Tailwind CSS v4，构建产物是纯静态站点，部署到 GitHub Pages。
-页面不请求任何外部 CDN、字体服务或后端接口；纸面颗粒是一段内联的 SVG 噪点。
+页面不请求任何外部 CDN 或字体服务；玩法说明页完全静态，纸面颗粒是一段内联的 SVG 噪点。
+反馈页（`feedback.html`）在配置了 `VITE_FEEDBACK_API` 时会向自建反馈服务读写数据，
+未配置时只读 `public/records.json` 这份静态副本。
 
 ```bash
 npm ci            # 安装依赖（严格按 package-lock.json）
@@ -34,7 +36,13 @@ npm run dev       # 本地开发，访问 http://localhost:5173/ShotaPartner-Doc
 npm run build     # 类型检查 + 构建到 dist/
 npm run preview   # 预览构建产物
 npm run typecheck # 只做类型检查
+
+npm run service      # 本地起反馈服务（http://127.0.0.1:8787）
+npm run service:test # 反馈服务自测（46 项，不需要网络）
 ```
+
+联调反馈页：先 `npm run service`，再
+`VITE_FEEDBACK_API=http://127.0.0.1:8787 npm run dev`，反馈页即切到在线提交。
 
 > `vite.config.ts` 里的 `base` 是 `/ShotaPartner-Docs/`（GitHub Pages 项目站点路径）。
 > 若将来迁移到自定义域名或用户站点，把它改成 `'/'` 即可。
@@ -49,6 +57,9 @@ push → main ─→ npm ci ─→ npm run build ─→ 校验 dist/index.html �
 
 - 首次部署前需在 **Settings → Pages → Source** 选择 **GitHub Actions**。
 - 也可在 Actions 页面手动 `workflow_dispatch` 触发。
+- 反馈服务地址走仓库变量 `FEEDBACK_API`（**Settings → Secrets and variables → Actions →
+  Variables**），构建时注入页面，不必改代码。未设置时反馈页只读，只显示静态副本。
+  服务本身的部署见 [service/README.md](service/README.md)。
 
 ## 目录结构
 
@@ -56,12 +67,19 @@ push → main ─→ npm ci ─→ npm run build ─→ 校验 dist/index.html �
 src/
 ├─ App.tsx                 # 页面装配 + FAQ 结构化数据 + 回到顶部
 ├─ index.css              # 两套主题的语义色板、纸面质感、组件类、无障碍与动效偏好
+├─ feedback/             # 反馈区独立页面（feedback.html 的入口）
+│  ├─ main.tsx           # 挂载
+│  ├─ FeedbackPage.tsx   # 页面外壳：页头、介绍、三个区块、页脚
+│  ├─ SubmitForm.tsx     # 提交表单：拖拽截图、自动压缩、编号回执
+│  ├─ ProgressPanel.tsx  # 进度统计与分段进度条
+│  └─ RecordList.tsx     # 全部记录，按状态筛选
 ├─ lib/                  # 站点运行时逻辑
 │  ├─ theme.ts           # 日间/夜间主题状态（首屏防闪由 index.html 内联脚本完成）
-│  └─ relay.ts           # 反馈中继客户端（未配置地址时不发请求）
+│  ├─ image.ts           # 上传前压缩：canvas 缩到长边 1600 并转 webp
+│  └─ feedbackClient.ts  # 读反馈服务 / 读静态副本、提交、本地校验
 ├─ components/
-│  ├─ Nav / Hero / Contents / Roster / Reference / Install / Faq / Feedback / Footer
-│  ├─ IssueBoard.tsx      # 进度区 + 展示区（状态统计、进度条、统一格式的反馈列表）
+│  ├─ Nav / Hero / Contents / Roster / Reference / Install / Faq / Footer
+│  ├─ FeedbackTeaser.tsx  # 文档首页上的反馈入口（完整反馈区在 feedback.html）
 │  ├─ Guide.tsx           # 玩法章节渲染器（按 data/guide.ts 的块类型渲染）
 │  └─ paper.tsx           # 纸面基础件：行内标记解析、Sheet、章节标题、批注
 └─ data/                  # ★ 所有文案与内容都在这里，改内容基本只动这层
@@ -71,23 +89,31 @@ src/
    ├─ reference.ts        # 按键、物品、方块、状态效果
    ├─ modules.ts          # 三个 jar 的版本与前置
    ├─ faq.ts              # 常见问题
-   ├─ feedback.ts         # 反馈表单、版本选项、提交深链、进度状态与统计
+   ├─ feedback.ts         # 反馈契约与文案：上限、状态、版本选项、记录类型
    └─ types.ts            # 章节数据结构
 
-relay/
-├─ server.mjs             # 反馈中继（Node 18+，零依赖）
-├─ worker.js              # 同一接口的 Cloudflare Worker 版
-├─ selftest.mjs           # 中继自测（11 项，不需要令牌）
-└─ README.md              # 部署、令牌权限、安全与自测说明
+service/                 # 反馈服务（Node 18+，零依赖；玩家提交的数据存这里）
+├─ store.mjs              # 共享契约与校验（站点与服务端一致的唯一来源）
+├─ server.mjs             # 服务本体：磁盘存储 + 图片落盘 + 改状态
+├─ worker.js              # 同契约的 Cloudflare Worker 版（数据放 KV）
+├─ admin.mjs              # 维护工具：list / show / status / export
+├─ selftest.mjs           # 服务自测（46 项，起真实进程走真实 HTTP）
+├─ worker.selftest.mjs    # Worker 自测（假 KV，无需 wrangler）
+├─ CONTRACT.md            # HTTP 接口契约
+├─ Dockerfile             # 容器镜像
+└─ README.md              # 部署（VPS / Docker / Worker / 云函数）与维护
+
 
 scripts/
 ├─ check-content.mjs      # 内容门禁：扫描 src/ 与 dist/
-├─ check-feedback-sync.mjs# 由 data/feedback.ts 生成并校验 feedback.yml
-├─ sync-issues.mjs        # 抓取 issue → public/issues.json（进度区数据）
+├─ check-feedback-contract.mjs  # 比对站点与 service/store.mjs 的字段与上限
+├─ import-legacy-issues.mjs     # 一次性补档：早期 issue → public/records.json
 └─ make-icons.py          # 站点图标 / 分享图
 
 public/
-└─ issues.json            # 反馈快照（构建时生成，页面同源读取，不请求外部接口）
+└─ records.json           # 记录静态副本（历史反馈 + 维护者导出），只读模式与种子用
+
+feedback.html             # 反馈区页面入口（与 index.html 同为 Vite 入口）
 ```
 
 ### 内容维护指引
@@ -100,22 +126,24 @@ public/
 | 版本号与前置依赖 | `src/data/modules.ts` |
 | 导航、首屏文案 | `src/data/site.ts` |
 | 常见问题 | `src/data/faq.ts` |
-| 反馈表单、版本选项、进度状态 | `src/data/feedback.ts`（**唯一来源**，`feedback.yml` 由它生成） |
-| GitHub Issue 表单 | `.github/ISSUE_TEMPLATE/feedback.yml`，改站点后跑 `npm run check:feedback -- --write` 重新生成 |
-| 反馈快照（进度区数据） | `npm run sync:issues` 抓取；`public/issues.json` 由脚本生成，不要手改 |
-| 反馈中继地址、国内备用入口 | `src/data/site.ts`（`FEEDBACK_RELAY_URL` / `FALLBACK_FEEDBACK_URL` / `SITE_MIRROR_URL`） |
-| 反馈中继服务 | `relay/`（部署与安全说明见 `relay/README.md`） |
+| 反馈区文案、版本选项、上限、状态 | `src/data/feedback.ts`（页面侧唯一来源） |
+| 反馈服务的字段与校验 | `service/store.mjs`（与服务端共享；与站点的一致性由 `npm run check:feedback` 守着） |
+| 反馈服务部署与维护 | [service/README.md](service/README.md) |
+| 反馈记录（改状态、导出静态副本） | `service/admin.mjs`，见 service/README.md「维护」 |
+| 记录静态副本 | `npm run service` 起来后 `node service/admin.mjs export --out public/records.json` |
+| 历史反馈补档 | `npm run seed:legacy`（只在补档时用，构建与部署都不访问 GitHub） |
+| 备用渠道 / 国内镜像 | `src/data/feedback.ts` 的 `FALLBACK_FEEDBACK_URL`、`site.ts` 的 `SITE_MIRROR_URL` |
 | 配色、纸面质感、字体 | `src/index.css`（`:root` 与 `[data-theme='dark']` 两套变量） |
 | 主题默认时段（按国内时间自动切换） | `src/lib/theme.ts` 的 `DAY_START_HOUR` / `DAY_END_HOUR`，与 `index.html` 内联脚本两处同步 |
 | 站点图标 / 分享图 | `scripts/make-icons.py` 重新生成，见下节 |
 | 内容门禁（收录范围与词表） | `scripts/check-content.mjs`，见「内容门禁」一节；词表以 base64 存放 |
-| 进度区的状态与配色 | `src/data/feedback.ts` 的 `issueStatuses`（标签 → 状态的映射在 `scripts/sync-issues.mjs`） |
+| 进度区的状态与配色 | `src/data/feedback.ts` 的 `feedbackStatuses` |
 
 `guide.ts` 里每章由若干内容块组成，可用的 `kind`：
 `p`（段落，支持 `` `代码` ``、`**加粗**`、`[文字](链接)`）、`sub`（小标题）、`list`、`steps`、`keys`、`table`、`note`（批注）。
 
-改动后请跑一次 `npm run build`（含类型检查、内容门禁与表单同步检查）再提交；CI 会用同样的命令构建。
-反馈快照不在构建里抓取（离线也能构建）；需要新数据时跑 `npm run sync:issues`，CI 在部署前会自动执行。
+改动后请跑一次 `npm run build`（含类型检查、内容门禁与反馈契约检查）再提交；CI 会用同样的命令构建。
+构建不访问网络：历史记录已经在 `public/records.json` 里，反馈服务也单独部署。
 
 ## 站点图标
 
@@ -186,10 +214,12 @@ npm run check:content -- --code <词>   # 新增受限词：打印 base64，粘�
 
 ## 国内网络下的访问与反馈
 
-GitHub 在国内经常无法直接访问，这一点没有办法靠前端绕过。反馈区不再做连接探测与线路测速，直接进入问题类型与模块选择；国内提交依赖下面两条可选路径：
+GitHub 在国内经常无法直接访问，而 GitHub 的 Issue 表单还要求玩家有账号、填一整套环境表——
+对普通 MC 玩家来说门槛太高。所以反馈区换了做法：
 
-1. **中继提交**：部署 `relay/` 并在 `FEEDBACK_RELAY_URL` 填入地址后，反馈区第「三」步会出现「直接提交到 issue 区」——由中继持服务端令牌建 issue，玩家不需要能打开 github.com。地址留空时该区块不出现，页面也不发出任何中继请求。
-2. **零后端备选**：在 Gitee 建一个反馈仓并把地址填进 `FALLBACK_FEEDBACK_URL`，入口显示在反馈区右侧「直达链接」卡片；国内可直达，但反馈落在 Gitee 而非 GitHub issue。
+**页面自己收，反馈服务自己存。** 玩家在 [feedback.html](feedback.html) 上填标题、版本、内容
+（可选附截图），不注册、不跳转、不经过任何第三方平台。记录与进度都保存在自建服务里，
+进度区按待处理 / 排查中 / 已修复 / 已关闭更新，每条反馈都有编号。
 
 ### 实测结论（2026-09-30）
 
@@ -201,89 +231,69 @@ GitHub 在国内经常无法直接访问，这一点没有办法靠前端绕过�
 | gh.llkk.cc | 403 | 200 | 200 |
 | gh.jasonzeng.dev | 200 但是节点自己的页面 | 200 | 200 |
 | ghproxy.net | **302 跳转到 survey-smiles.com（垃圾站点）** | 200 | 200 |
-| bgithub.xyz / kkgithub.com / hub.whtrys.space / github.moeyy.xyz | 403 或不可达 | — | — |
+| bgithub.xyz / kkgithub.com / hub.whtrys.space / github.moeey.xyz | 403 或不可达 | — | — |
 
-因此**没有任何国内节点可以承载 issue 表单与登录流程**：它们只转发文件路径，HTML 页面一律 403/404，而 `issues/new` 本身需要 GitHub 会话。`ghproxy.net` 已跳转垃圾站点，不再列入任何名单。
+结论没有变：**没有任何国内节点能承载 HTML 页面与登录流程**，它们只转发文件路径。
+这也是反馈区不再依赖 GitHub 的表单与账号的原因——需要跨境的只有「下载模组文件」，
+那件事加速节点本来就做得很好。
 
-### 反馈中继（可选，唯一能在国内直接建 issue 的路径）
+### 反馈服务的部署
 
-`relay/` 下是一份最小后端（Node 零依赖版 `server.mjs` + Cloudflare Worker 版 `worker.js`，接口一致）：玩家只把草稿 POST 给它，由它用**服务端保管的细粒度令牌**调用 `api.github.com` 建 issue，令牌不下发到浏览器。部署与安全说明见 [relay/README.md](relay/README.md)，自测（不访问 GitHub、不需要令牌）见 [relay/selftest.mjs](relay/selftest.mjs)：
+服务是一份零依赖的 Node 程序（另有同契约的 Cloudflare Worker 版），
+部署方式（国内 VPS / Docker / Worker + KV / 云函数）、环境变量、维护命令见
+[service/README.md](service/README.md)。部署后把地址填进仓库变量 `FEEDBACK_API` 即可。
 
-```bash
-node relay/selftest.mjs   # 11 项：校验、标签映射、蜜罐、来源白名单、限流
-```
+**没有部署服务时**，反馈页进入只读模式：记录与进度照常显示（读 `public/records.json`），
+提交按钮换成「复制内容」与备用渠道提示。想启用备用渠道，把国内可直接访问的表单地址填进
+`src/data/feedback.ts` 的 `FALLBACK_FEEDBACK_URL`，页面就会多一个入口。
 
-启用方式：部署后把地址填进 `FEEDBACK_RELAY_URL`（或构建期 `VITE_RELAY_URL`），反馈区会出现「经中继直接提交」；**留空则完全不显示该区块**，页面回到纯静态的复制 / 下载草稿模式，不产生任何中继请求。
+### 相关配置
 
-另一条零后端路线：在 Gitee 建一个反馈仓并把地址填进 `FALLBACK_FEEDBACK_URL`（国内可直达，但反馈落在 Gitee 而非 GitHub issue）。
-
-### 相关配置（`src/data/site.ts`）
-
-页面已不再做节点测速：以下常量决定反馈区的入口。
-
-| 常量 | 作用 |
-| --- | --- |
-| `FEEDBACK_RELAY_URL` | 反馈中继地址；**留空则不显示「直接提交」按钮，且不发出任何中继请求** |
-| `FALLBACK_FEEDBACK_URL` / `FALLBACK_FEEDBACK_LABEL` | 国内备用反馈渠道（问卷、表单、Gitee 仓等）；**留空则不显示该入口** |
-| `SITE_MIRROR_URL` | 本站的国内镜像地址（例如另建的 Gitee Pages / Cloudflare Pages）；留空则不显示 |
-
-填好后跑一次 `npm run build` 即可，无需改动组件代码。
-
-## 反馈区、进度区与展示区
-
-页面上有三块，都只依赖静态文件和 GitHub 官方表单，不需要自建后端：
-
-| 区块 | 位置 | 作用 |
+| 配置 | 位置 | 作用 |
 | --- | --- | --- |
-| 反馈提交区 | `#feedback` | 四项输入：标题、版本、内容、截图（可选），生成预填好的 GitHub 表单深链 |
-| 进度区 | `#progress` | 各状态的条数、占比与进度条，说明每种状态的含义 |
-| 展示区 | `#board` | 按统一格式列出全部反馈，可按状态筛选，带缩略图 |
+| `VITE_FEEDBACK_API` | 构建期注入 / 仓库变量 `FEEDBACK_API` | 反馈服务地址；留空则反馈页只读 |
+| `FALLBACK_FEEDBACK_URL` / `FALLBACK_FEEDBACK_LABEL` | `src/data/feedback.ts` | 国内备用提交渠道；留空则不显示 |
+| `SITE_MIRROR_URL` | `src/data/site.ts` | 本站国内镜像地址；留空则不显示 |
 
-四套旧模板（缺陷 / 崩溃 / 兼容 / 建议）已合并为**一张** [`.github/ISSUE_TEMPLATE/feedback.yml`](.github/ISSUE_TEMPLATE/feedback.yml)：
+## 反馈区与进度区
 
-| 字段 | 类型 | 说明 |
+反馈区是**独立页面** `feedback.html`，不埋在玩法说明的末尾：玩家从游戏里出来时应该一眼看到
+「怎么提交、进度在哪」。文档首页只留一个入口卡片（`FeedbackTeaser.tsx`）和一句进度概况。
+
+| 区块 | 锚点 | 作用 |
 | --- | --- | --- |
-| 标题 | 表单标题栏 | 站点深链预填 `[反馈] <标题>` |
-| 版本 | `dropdown` | `0.3.1（当前版本）`、整合包内附带的版本、更早的版本、不确定 |
-| 内容 | `textarea` | 现象、复现步骤、期望结果 |
-| 截图 / 录屏 | `upload` | GitHub 原生上传（图片 10 MB、视频 100 MB 以内） |
+| 提交 | `#submit` | 标题 / 版本 / 内容 / 截图（可选）/ 联系方式（可选，仅维护者可见） |
+| 进度 | `#progress` | 各状态条数、占比与分段进度条 |
+| 记录 | `#records` | 全部反馈，按状态筛选，带缩略图与编号 |
 
-问题属于哪一类、涉及哪个模块，**不再要求玩家选择**：由维护者看内容判断并补 `bug` / `crash` / `compatibility` / `enhancement` 与模块标签。表单默认只带 `needs-triage`。
+提交后立即写入反馈服务并显示编号回执，新记录当场出现在下面的记录与进度里。
 
-### 表单与站点同步
+### 截图是怎么处理的
 
-[`src/data/feedback.ts`](src/data/feedback.ts) 是唯一来源：表单名、说明、标题前缀、标签、版本选项、内容提示、截图说明、提交须知都写在里面。
+玩家多半直接截屏后拖进来，原图常常好几 MB。页面先在浏览器里用 canvas 把长边缩到
+1600 px、转成 webp（`src/lib/image.ts`）再提交，一次提交通常只有几百 KB。
+GIF 不压缩（转码会把动图压成静态图），超限时直接提示。
+服务端的上限是单张 3 MB、合计 8 MB、最多 3 张，与页面提示一致。
 
-```bash
-npm run check:feedback              # 校验；不一致即退出码 1
-npm run check:feedback -- --write   # 改完站点数据后重新生成 feedback.yml
-```
+### 契约与一致性
 
-校验由 [scripts/check-feedback-sync.mjs](scripts/check-feedback-sync.mjs) 执行，已挂在 `npm run build` 上：文件多出第二张表单、表单与站点数据不一致、或深链漏掉标题 / 版本 / 内容任一预填，构建都会失败。版本选项里的本体版本号取自 [`src/data/modules.ts`](src/data/modules.ts)，改版本号后重新生成即可。
+字段名、长度上限、状态取值分散在「页面」和「服务」两侧，任何漂移的后果都是玩家提交失败却查不出原因。
+因此：
 
-**维护者注意**：表单里的 `labels` 必须已存在于本仓库，否则 GitHub 会静默忽略。表单只带 `needs-triage`，分类标签由维护者按内容补：
-`bug`、`crash`、`compatibility`、`enhancement`、`question`、`documentation`、`duplicate`、`wontfix`、`good first issue`，
-以及模块标签 `module:core`、`module:api`、`module:school`、`module:docs`。
+- 服务端把契约集中在 [`service/store.mjs`](service/store.mjs)，`server.mjs` 与 `worker.js` 都复用它；
+- 站点侧对应 [`src/data/feedback.ts`](src/data/feedback.ts)；
+- `npm run check:feedback`（[scripts/check-feedback-contract.mjs](scripts/check-feedback-contract.mjs)）
+  解析两侧逐项比对：上限、状态、图片类型、记录字段、静态副本能否通过服务端自己的校验，
+  并检查两个实现确实复用了共享层。它还带自测——故意改坏六种，任何一种没被认出来就构建失败。
 
-**进度就是这么推进的**：给 issue 加 `已修复` 标签，进度区（下次部署后）就把它算作已修复并计入百分比；`待排查` / `排查中` 算排查中，`已关闭` / `wontfix` / `duplicate` 算已关闭，其余为待处理。旧标签 `Core` 只是历史遗留，不参与统计。
+### 记录与状态
 
-### 反馈快照
-
-进度区与展示区读的是 `public/issues.json`，由 [scripts/sync-issues.mjs](scripts/sync-issues.mjs) 在部署前抓取：
-
-```bash
-npm run sync:issues   # 有 GH_TOKEN / GITHUB_TOKEN 走 REST API，否则用本机 gh CLI
-```
-
-- 归一化：旧模板提交的 issue 标题带 `[Bug] [Core]` 前缀、正文是 `### 字段` 分段，脚本会去掉前缀、取出「模组版本」与「实际结果 / 复现步骤」等段落，压成标题 / 版本 / 内容 / 截图 / 状态 / 时间。
-- 状态取自 issue 标签：`已修复` / `fixed` → 已修复，`排查中` / `待排查` → 排查中，`已关闭` / `wontfix` → 已关闭，其余为待处理。
-- 取不到数据（离线、无凭据）时脚本保留既有快照并正常退出，不会阻塞构建。
-- 页面从同源读快照，**运行时不发任何外部请求**，所以国内访问不需要代理。
-- 玩家提交的原文会随快照进入 `dist/issues.json`，内容门禁按路径跳过这个文件（见「内容门禁」一节）。
-
-页面上的提交按钮不调用任何后端：它用 GitHub 官方的 issue 表单深链
-（`issues/new?template=feedback.yml&title=…&version=…&content=…`）生成预填链接，因此**不需要 token 或代理服务**。
-配置 `FEEDBACK_RELAY_URL` 后，`relay/` 会额外提供「无需 GitHub 账号」的直接提交入口（中继服务端只接受标题 / 版本 / 内容，标签固定为 `needs-triage`）。
+- 记录编号形如 `F-0031`，由服务端分配，不复用。
+- 状态：`pending` 待处理 / `investigating` 排查中 / `fixed` 已修复 / `closed` 已关闭。
+  维护者用 `node service/admin.mjs status F-0031 fixed` 改，进度区随即更新。
+- **联系方式不进公开响应**：只有带对 `X-Admin-Key` 的请求才能拿到，页面永远看不到它。
+- 早期的 23 条反馈（原 GitHub issue）已归一化成 `F-0008`~`F-0030`，保留原链接，
+  编号接着往下发。
 
 ## 许可
 

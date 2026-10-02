@@ -66,11 +66,11 @@ if (process.argv[2] === '--code') {
 const TEXT_EXT = new Set(['.ts', '.tsx', '.js', '.mjs', '.jsx', '.html', '.css', '.json', '.md', '.svg', '.txt', '.xml'])
 
 /**
- * 不参与扫描的路径：这些文件里的文字来自玩家（issue 快照）或第三方，不是本站文案。
- * 快照是构建产物（public/issues.json → dist/issues.json），内容由玩家提交、未经改写，
- * 可能包含我们无法控制也不应删改的词，因此按路径跳过。
+ * 不参与扫描的路径：这些文件里的文字来自玩家或第三方，不是本站文案。
+ * records.json 里的记录由玩家提交、未经改写，可能包含我们无法控制也不应删改的词，
+ * 因此按路径跳过（静态副本 public/records.json 会随构建进入 dist/）。
  */
-const SKIP_PATHS = [/^public\/issues\.json$/, /^dist\/issues\.json$/]
+const SKIP_PATHS = [/^public\/records\.json$/, /^dist\/records\.json$/]
 
 function walk(dir, files = []) {
   if (!fs.existsSync(dir)) return files

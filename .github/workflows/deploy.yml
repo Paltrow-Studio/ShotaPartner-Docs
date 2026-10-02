@@ -46,17 +46,17 @@ jobs:
       - name: 安装依赖（npm ci）
         run: npm ci
 
-      # 抓取反馈快照（public/issues.json）：进度区与展示区读它，页面运行时不请求任何外部接口。
-      # 取不到 issue（离线 / 无令牌）时脚本保留既有快照并正常退出，不会阻塞部署。
-      - name: 同步反馈快照
-        run: npm run sync:issues
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # 执行项目构建脚本（tsc --noEmit && vite build && 内容门禁 && 表单同步检查），产物输出到 dist/
-      # 内容门禁见 scripts/check-content.mjs 与 README「内容门禁」一节
+      # 执行项目构建脚本（tsc --noEmit && vite build && 内容门禁 && 反馈契约检查），产物输出到 dist/
+      # 内容门禁见 scripts/check-content.mjs 与 README「内容门禁」一节；
+      # 反馈契约检查比对站点与 service/store.mjs 的字段与上限。
+      #
+      # VITE_FEEDBACK_API 指向自建反馈服务（service/README.md）。在仓库 Settings →
+      # Secrets and variables → Actions → Variables 里建一个名为 FEEDBACK_API 的变量即可，
+      # 不必改代码；未设置时反馈页进入只读模式，只显示 public/records.json 里的静态副本。
       - name: 构建站点（npm run build）
         run: npm run build
+        env:
+          VITE_FEEDBACK_API: ${{ vars.FEEDBACK_API }}
 
       # 部署前校验：构建产物入口必须存在，否则直接让这一步失败
       - name: 校验构建产物存在
