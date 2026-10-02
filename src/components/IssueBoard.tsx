@@ -118,7 +118,8 @@ function IssueCard({ issue }: { issue: BoardIssue }) {
       ) : null}
 
       <p className="num mt-3 text-[0.78rem] text-ink-faint">
-        #{issue.number}　{issue.createdAt.slice(0, 10)}
+        #{issue.number}
+        {issue.createdAt ? `　${issue.createdAt.slice(0, 10)}` : ''}
       </p>
     </li>
   )

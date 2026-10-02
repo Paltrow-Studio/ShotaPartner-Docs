@@ -165,6 +165,15 @@ function normalize(issue) {
   }
   if (!content) content = clean(sectionsOf(rawBody).preamble)
 
+  // 取数字段要同时兼容两种来源：REST 是 created_at / html_url，
+  // gh CLI 是 createdAt / url（后者的 url 也可能是 api.github.com 地址，只认 html_url 与网页地址）。
+  const createdAt = issue.createdAt ?? issue.created_at ?? ''
+  const htmlUrl =
+    issue.html_url ??
+    (typeof issue.url === 'string' && issue.url.startsWith(`https://github.com/${REPO}/`)
+      ? issue.url
+      : `https://github.com/${REPO}/issues/${issue.number}`)
+
   return {
     number: issue.number,
     title,
@@ -172,9 +181,33 @@ function normalize(issue) {
     content: truncate(content),
     images,
     status: statusOf(issue),
-    createdAt: issue.createdAt,
-    url: issue.url ?? `https://github.com/${REPO}/issues/${issue.number}`,
+    createdAt,
+    url: htmlUrl,
   }
+}
+
+/** 写入前的硬校验：字段不全的快照宁可让部署失败，也不要让页面读到半成品。 */
+const REQUIRED = {
+  number: (v) => Number.isInteger(v) && v > 0,
+  title: (v) => typeof v === 'string' && v.length > 0,
+  content: (v) => typeof v === 'string',
+  status: (v) => ['pending', 'investigating', 'fixed', 'closed'].includes(v),
+  createdAt: (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v),
+  url: (v) => typeof v === 'string' && v.startsWith('https://github.com/'),
+}
+const ARRAYS = { images: (v) => Array.isArray(v) }
+
+function validateIssues(issues) {
+  const bad = []
+  for (const issue of issues) {
+    for (const [key, ok] of Object.entries(REQUIRED)) {
+      if (!ok(issue[key])) bad.push(`#${issue.number ?? '?'} 的 ${key} 非法：${JSON.stringify(issue[key])}`)
+    }
+    for (const [key, ok] of Object.entries(ARRAYS)) {
+      if (!ok(issue[key])) bad.push(`#${issue.number ?? '?'} 的 ${key} 不是数组`)
+    }
+  }
+  return bad
 }
 
 /* ---------- 取数 ---------- */
@@ -252,6 +285,19 @@ function main() {
   const issues = raw
     .map(normalize)
     .sort((a, b) => b.number - a.number)
+
+  if (!issues.length) {
+    console.error('反馈快照：取到的 issue 为空，保留现有快照（不覆盖）')
+    process.exit(1)
+  }
+
+  const bad = validateIssues(issues)
+  if (bad.length) {
+    console.error('反馈快照：归一化结果有缺字段，未写入（保留现有快照）：')
+    for (const line of bad.slice(0, 10)) console.error(`  · ${line}`)
+    if (bad.length > 10) console.error(`  · 另有 ${bad.length - 10} 处`)
+    process.exit(1)
+  }
 
   const payload = { generatedAt: new Date().toISOString(), issues }
   fs.mkdirSync(path.dirname(OUT), { recursive: true })
