@@ -265,6 +265,8 @@ npm run check:feedback -- --write   # 改完站点数据后重新生成 feedback
 `bug`、`crash`、`compatibility`、`enhancement`、`question`、`documentation`、`duplicate`、`wontfix`、`good first issue`，
 以及模块标签 `module:core`、`module:api`、`module:school`、`module:docs`。
 
+**进度就是这么推进的**：给 issue 加 `已修复` 标签，进度区（下次部署后）就把它算作已修复并计入百分比；`待排查` / `排查中` 算排查中，`已关闭` / `wontfix` / `duplicate` 算已关闭，其余为待处理。旧标签 `Core` 只是历史遗留，不参与统计。
+
 ### 反馈快照
 
 进度区与展示区读的是 `public/issues.json`，由 [scripts/sync-issues.mjs](scripts/sync-issues.mjs) 在部署前抓取：
