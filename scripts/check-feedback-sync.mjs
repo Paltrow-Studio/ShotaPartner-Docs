@@ -156,6 +156,79 @@ else if (fs.readFileSync(FORM_FILE, 'utf8').trimEnd() !== generated.trimEnd()) {
   fail(`${form.template} 与站点数据不一致；改站点后运行 node scripts/check-feedback-sync.mjs --write 重新生成`)
 }
 
+/* ---------- 表单结构：GitHub 的 Issue Form 架构校验 ---------- */
+// 选择页需要登录，CI 里看不到渲染结果，所以按官方 schema 静态校验字段类型与必备属性，
+// 拦住「类型拼错、下拉没有选项、把 id 写在 markdown 上」这类会让表单整张失效的问题。
+
+const ALLOWED_TYPES = new Set(['markdown', 'input', 'textarea', 'dropdown', 'checkboxes', 'upload'])
+const TOP_LEVEL_KEYS = new Set(['name', 'description', 'title', 'labels', 'assignees', 'body'])
+
+/** 返回问题列表；空数组表示这张表单结构合法 */
+function schemaProblems(text) {
+  const found = []
+  const rows = text.split('\n')
+  const types = rows.map((line) => line.match(/^\s*- type:\s*(\S+)\s*$/)?.[1]).filter(Boolean)
+  const ids = [...text.matchAll(/^\s+id:\s*(\S+)\s*$/gm)].map((m) => m[1])
+
+  // 顶层键：只允许 GitHub 认的那几个（缩进的字段属性不算）
+  for (const line of rows) {
+    const key = line.match(/^([A-Za-z_]+):/)?.[1]
+    if (key && !TOP_LEVEL_KEYS.has(key)) found.push(`顶层出现不允许的键：${key}`)
+  }
+
+  if (!types.length) found.push('body 里没有任何字段')
+  for (const type of types) {
+    if (!ALLOWED_TYPES.has(type)) found.push(`不支持的字段类型 ${type}`)
+  }
+  if (new Set(ids).size !== ids.length) found.push('字段 id 有重复')
+  for (const id of ids) {
+    if (!/^[A-Za-z0-9_-]+$/.test(id)) found.push(`字段 id 含非法字符：${id}`)
+  }
+
+  for (const block of text.split(/^\s*- type:\s*/m).slice(1)) {
+    const type = block.split('\n')[0].trim()
+    const hasLabel = /^\s+label:\s*"/m.test(block)
+    if (type === 'markdown') {
+      if (!/value:\s*\|/.test(block)) found.push('markdown 字段缺少 attributes.value')
+      if (/^\s+id:/m.test(block)) found.push('markdown 字段不允许有 id（GitHub 会报错）')
+      continue
+    }
+    if (!/^\s+id:/m.test(block)) found.push(`${type} 字段缺少 id`)
+    if (['input', 'textarea', 'dropdown'].includes(type) && !hasLabel) {
+      found.push(`${type} 字段缺少 attributes.label`)
+    }
+    if (type === 'dropdown') {
+      if (!/options:/.test(block)) found.push('dropdown 缺少 options')
+      else if (!/^\s{8}-\s+"/m.test(block)) found.push('dropdown 的 options 为空')
+    }
+    if (type === 'upload' && /(options:|placeholder:)/.test(block)) {
+      found.push('upload 字段不支持 options / placeholder')
+    }
+  }
+  return found
+}
+
+for (const problem of schemaProblems(generated)) fail(`feedback.yml：${problem}`)
+
+// 自测：确认上面这层守卫不是空转（故意写坏几种，必须都能被认出来）
+const selfTests = [
+  ['字段类型拼错', generated.replace('  - type: upload', '  - type: uploads'), '不支持的字段类型'],
+  [
+    'markdown 带 id',
+    generated.replace('  - type: markdown\n    attributes:', '  - type: markdown\n    id: note\n    attributes:'),
+    'markdown 字段不允许有 id',
+  ],
+  ['dropdown 选项为空', generated.replace(/^ {8}- ".*"$/gm, ''), 'options 为空'],
+  ['字段 id 重复', generated.replace('    id: content', '    id: version'), 'id 有重复'],
+  ['顶层多余键', generated.replace('title: "[反馈] "', 'title: "[反馈] "\nfoo: bar'), '顶层出现不允许的键'],
+]
+for (const [label, mutated, expected] of selfTests) {
+  const hits = schemaProblems(mutated)
+  if (!hits.some((hit) => hit.includes(expected))) {
+    fail(`表单结构校验自测失败：「${label}」没有被认出来（期望包含「${expected}」，实际 ${JSON.stringify(hits)}）`)
+  }
+}
+
 // 站点链接必须预填标题、版本、内容（截图无法通过链接传递）
 const urlStart = source.indexOf('export function buildIssueUrl')
 if (urlStart < 0) fail('src/data/feedback.ts：找不到 buildIssueUrl')
@@ -168,6 +241,11 @@ else {
   }
   if (!/template:\s*feedbackForm\.template/.test(urlBody)) {
     fail('src/data/feedback.ts：buildIssueUrl 应预填模板')
+  }
+  // 预填的键必须真的是表单字段的 id，否则 GitHub 会静默忽略、玩家白填
+  const formIds = [...generated.matchAll(/^\s+id:\s*(\S+)\s*$/gm)].map((m) => m[1])
+  for (const key of ['version', 'content']) {
+    if (!formIds.includes(key)) fail(`feedback.yml：缺少 id 为 ${key} 的字段，深链预填会失效`)
   }
 }
 
