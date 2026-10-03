@@ -113,6 +113,27 @@ const commands = {
     console.log(`${data.record.id} → ${STATUS_LABEL[data.record.status] ?? data.record.status}`)
   },
 
+  async import() {
+    // argv: [node, admin.mjs, 'import', '--from', <文件>]
+    const from = argValue('--from') ?? 'public/records.json'
+    if (!ADMIN_KEY) throw new Error('导入需要 ADMIN_KEY 环境变量（与服务端一致）')
+    const fs = await import('node:fs')
+    const path = await import('node:path')
+    const file = path.resolve(from)
+    if (!fs.existsSync(file)) throw new Error(`找不到文件：${file}`)
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'))
+    const records = Array.isArray(parsed) ? parsed : (parsed.records ?? [])
+    if (!records.length) throw new Error(`${from} 里没有 records 数组`)
+    const data = await api('/import', { method: 'POST', body: JSON.stringify({ records }) })
+    console.log(
+      `导入完成：新增 ${data.imported} 条，已存在跳过 ${data.skipped} 条${data.wouldImport !== undefined ? `（演练：将新增 ${data.wouldImport} 条）` : ''}`,
+    )
+    if (data.problems?.length) {
+      console.log(`未导入 ${data.problems.length} 条：`)
+      for (const problem of data.problems.slice(0, 10)) console.log(`  · ${problem}`)
+    }
+  },
+
   async export() {
     const out = argValue('--out') ?? 'public/records.json'
     // 静态副本是要提交进仓库、发布到站点上的，**必须剥掉联系方式**：
@@ -136,7 +157,7 @@ async function main() {
   const run = commands[command]
   if (!run) {
     console.error(`未知命令：${command}`)
-    console.error('可用：list、show、status、export')
+    console.error('可用：list、show、status、import、export')
     process.exit(2)
   }
   try {

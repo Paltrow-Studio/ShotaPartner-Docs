@@ -236,6 +236,83 @@ async function main() {
     fs.rmSync(dataDir, { recursive: true, force: true })
   }
 
+  /* ============ 维护者导入（补档 / 迁移） ============ */
+  {
+    const { child, dataDir } = await startServer({ ADMIN_KEY, RATE_LIMIT_PER_HOUR: '50' }, 'import')
+    try {
+      const legacy = [
+        {
+          id: 'F-0101',
+          title: '导入的历史记录',
+          version: '0.2.0',
+          content: '这条来自补档，用来验证导入接口。',
+          images: ['https://example.com/a.png'],
+          status: 'fixed',
+          createdAt: '2026-01-02T03:04:05.000Z',
+          updatedAt: '2026-01-02T03:04:05.000Z',
+          contact: 'keepme@example.com',
+          legacyUrl: 'https://example.com/legacy/101',
+        },
+      ]
+      const noKey = await post('/import', { records: legacy })
+      check(noKey.status === 403, '导入不带密钥 → 403', `实际 ${noKey.status}`)
+
+      const first = await post('/import', { records: legacy }, { 'x-admin-key': ADMIN_KEY })
+      check(first.json?.imported === 1 && first.json?.skipped === 0, '导入 1 条成功', JSON.stringify(first.json))
+
+      const again = await post('/import', { records: legacy }, { 'x-admin-key': ADMIN_KEY })
+      check(again.json?.imported === 0 && again.json?.skipped === 1, '重复导入按编号幂等', JSON.stringify(again.json))
+
+      const allBad = await post('/import', { records: [{ id: 'X', title: '' }] }, { 'x-admin-key': ADMIN_KEY })
+      check(allBad.status === 400, '整批都不合法 → 400', `实际 ${allBad.status}`)
+
+      const mixed = await post(
+        '/import',
+        {
+          records: [
+            {
+              id: 'F-0102',
+              title: '半批记录',
+              version: '0.2.0',
+              content: '只有这一条是合法的：混在坏记录里也应当被导入。',
+              images: [],
+              status: 'pending',
+              createdAt: '2026-01-02T03:04:05.000Z',
+            },
+            { id: 'nope' },
+          ],
+        },
+        { 'x-admin-key': ADMIN_KEY },
+      )
+      check(
+        mixed.json?.imported === 1 && mixed.json?.problems?.length === 1,
+        '坏记录被挑出、好记录照常导入',
+        JSON.stringify(mixed.json),
+      )
+
+      const listed = await (await fetch(`${BASE}/records?limit=200`)).json()
+      const kept = listed.records.find((record) => record.id === 'F-0101')
+      check(
+        kept?.status === 'fixed' && kept?.legacyUrl === 'https://example.com/legacy/101' && !('contact' in kept),
+        '导入保留状态与原链接，公开列表不带联系方式',
+        JSON.stringify(kept),
+      )
+      const adminView = await (await fetch(`${BASE}/records?limit=200`, { headers: { 'x-admin-key': ADMIN_KEY } })).json()
+      check(
+        adminView.records.find((record) => record.id === 'F-0101')?.contact === 'keepme@example.com',
+        '导入保留联系方式（维护者可见）',
+        '联系方式丢了',
+      )
+
+      // 编号接着已有最大值往下发，不会与导入的历史记录撞号
+      const next = await post('/submit', validSubmission())
+      check(next.json?.record?.id === 'F-0103', '新记录编号接在导入记录之后', `实际 ${next.json?.record?.id}`)
+    } finally {
+      await stop(child)
+      fs.rmSync(dataDir, { recursive: true, force: true })
+    }
+  }
+
   /* ============ 限流 ============ */
   {
     const { child, dataDir } = await startServer({ RATE_LIMIT_PER_HOUR: '1' }, 'rate')

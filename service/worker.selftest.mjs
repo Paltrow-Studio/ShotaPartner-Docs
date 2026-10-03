@@ -359,7 +359,35 @@ async function main() {
   const clamped = await (await get(seededEnv, '/records?limit=1000&status=fixed')).json()
   check(clamped.records.length === 2, 'limit 超出范围时收拢到 200（仍返回全部 2 条）', `实际 ${clamped.records.length}`)
 
-  /* 8. POST /status */
+  /* 8. POST /import（补档 / 迁移） */
+  const noKeyImport = await post(seededEnv, '/import', { records: [] })
+  check(noKeyImport.status === 403, '导入不带密钥 → 403', `实际 ${noKeyImport.status}`)
+  const legacyRecord = {
+    id: 'F-0101',
+    title: '导入的历史记录',
+    version: '0.2.0',
+    content: '这条来自补档，用来验证导入接口。',
+    images: ['https://example.com/a.png'],
+    status: 'fixed',
+    createdAt: '2026-01-02T03:04:05.000Z',
+    updatedAt: '2026-01-02T03:04:05.000Z',
+    contact: 'keepme@example.com',
+    legacyUrl: 'https://example.com/legacy/101',
+  }
+  const imported = await (await post(seededEnv, '/import', { records: [legacyRecord] }, { headers: { 'x-admin-key': ADMIN_KEY } })).json()
+  check(imported.imported === 1 && imported.skipped === 0, '导入 1 条成功', JSON.stringify(imported))
+  const importedAgain = await (await post(seededEnv, '/import', { records: [legacyRecord] }, { headers: { 'x-admin-key': ADMIN_KEY } })).json()
+  check(importedAgain.imported === 0 && importedAgain.skipped === 1, '重复导入按编号幂等', JSON.stringify(importedAgain))
+  const allBadImport = await post(seededEnv, '/import', { records: [{ id: 'X' }] }, { headers: { 'x-admin-key': ADMIN_KEY } })
+  check(allBadImport.status === 400, '整批都不合法 → 400', `实际 ${allBadImport.status}`)
+  const listedAfterImport = await (await get(seededEnv, '/records?limit=200')).json()
+  const keptRecord = listedAfterImport.records.find((record) => record.id === 'F-0101')
+  check(
+    keptRecord?.status === 'fixed' && keptRecord?.legacyUrl === 'https://example.com/legacy/101' && !('contact' in keptRecord),
+    '导入保留状态与原链接，公开列表不带联系方式',
+    JSON.stringify(keptRecord),
+  )
+  /* 9. POST /status */
   const noKeyRes = await post(env, '/status', { id: record.id, status: 'fixed' })
   check(noKeyRes.status === 403, 'POST /status 无密钥 → 403', `实际 ${noKeyRes.status}`)
   const wrongKeyRes = await post(env, '/status', { id: record.id, status: 'fixed' }, {
@@ -390,7 +418,7 @@ async function main() {
   })
   check(badStatusBody.status === 400, 'POST /status 状态取值非法 → 400', `实际 ${badStatusBody.status}`)
 
-  /* 9. 限流：校验不消耗配额，超限 429 */
+  /* 10. 限流：校验不消耗配额，超限 429 */
   const rateEnv = makeEnv({ RATE_LIMIT_PER_HOUR: '1' })
   const invalidFirst = await post(rateEnv, '/submit', submission({ title: '短' }))
   check(invalidFirst.status === 400, '限流环境：校验失败的提交仍是 400', `实际 ${invalidFirst.status}`)
@@ -409,7 +437,7 @@ async function main() {
     '实际记录数不是 1',
   )
 
-  /* 10. 来源白名单与预检 */
+  /* 11. 来源白名单与预检 */
   const evilRes = await post(env, '/submit', submission(), { origin: 'https://evil.example' })
   check(evilRes.status === 403, '非法 Origin 的提交 → 403', `实际 ${evilRes.status}`)
   const evilReadRes = await get(env, '/records', { origin: 'https://evil.example' })

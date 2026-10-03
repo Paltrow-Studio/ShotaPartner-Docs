@@ -1,0 +1,45 @@
+# 反馈服务（Cloudflare Worker）的部署配置模板
+#
+#   cd service
+#   npx wrangler kv namespace create RECORDS     # 记下输出里的 id
+#   cp wrangler.toml.example wrangler.toml       # 填入 id 与自己的域名
+#   npx wrangler secret put ADMIN_KEY            # 输入一段长随机串
+#   npx wrangler deploy
+#
+# 说明：
+#   - 本文件是模板，真正的 wrangler.toml 里含命名空间 id，请按需自行保管；
+#     仓库里没有它可以正常构建站点（站点只关心 VITE_FEEDBACK_API）。
+#   - 生产环境请用自定义域名：*.workers.dev 在国内多数网络下无法直连，
+#     而玩家大多在国内。绑域名的方式见文件末尾的 routes。
+#   - 站点是 https，Worker 也必须走 https，否则浏览器会拦混合内容。
+
+name = "shota-feedback"
+main = "worker.js"
+# 与 service/store.mjs 同处一个模块图，Worker 会把它一起打包，不需要额外配置
+compatibility_date = "2026-01-01"
+
+# KV 绑定名必须是 RECORDS（worker.js 只认这个名字）
+[[kv_namespaces]]
+binding = "RECORDS"
+id = "在这里填入 npx wrangler kv namespace create RECORDS 输出的 id"
+
+[vars]
+# 允许提交的浏览器来源，逗号分隔。不填时 worker.js 用内置默认值
+# （站点域名 + 本地 5173/4177/4178），本地联调不必改这里。
+ALLOWED_ORIGINS = "https://paltrow-studio.github.io"
+# 单 IP 每小时提交上限，默认 5；设 0 表示关闭提交入口
+RATE_LIMIT_PER_HOUR = "5"
+# 想先演练（只校验、不写 KV）时改成 "1"，验证完记得删掉这一行
+# DRY_RUN = "1"
+
+# ADMIN_KEY 不要写在这里，用 npx wrangler secret put ADMIN_KEY 存成 secret。
+
+# ── 自定义域名（推荐，国内可直连的前提）─────────────────────────────
+# 在 Cloudflare 上已经托管了 example.com 的前提下，加一段：
+#
+# [[routes]]
+# pattern = "feedback.example.com"
+# custom_domain = true
+#
+# 部署完成后用 curl 验证：
+#   curl https://feedback.example.com/health

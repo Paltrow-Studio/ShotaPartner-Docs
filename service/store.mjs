@@ -175,6 +175,41 @@ export function publicRecord(record) {
   }
 }
 
+/** 一次导入的条数上限：补档够用，同时挡住「把整个 KV 塞进一个请求」 */
+export const IMPORT_MAX = 500
+
+/**
+ * 维护者导入（补档与 Node ↔ Worker 迁移）。
+ *
+ * 与玩家提交不同：记录已经成型（编号、时间、状态都由调用方给出），因此只判断
+ * 「能不能入库」，不重新编号、不改状态。返回的 records 可以直接写存储，
+ * problems 里的条目一律不导入——补档时一条坏记录不该拖住其余 22 条。
+ *
+ * 联系方式在导入时保留：从 Node 版迁到 Worker 版（或反过来）不能让维护者
+ * 丢掉回访线索。它依旧只出现在带管理密钥的响应里。
+ */
+export function prepareImport(input) {
+  const list = Array.isArray(input) ? input : input?.records
+  if (!Array.isArray(list)) return { records: [], problems: ['请求体里没有 records 数组'] }
+  if (list.length > IMPORT_MAX) return { records: [], problems: [`一次最多导入 ${IMPORT_MAX} 条`] }
+
+  const records = []
+  const problems = []
+  for (const item of list) {
+    const issues = recordProblems(item)
+    if (issues.length) {
+      problems.push(`${item?.id ?? '?'}：${issues.join('；')}`)
+      continue
+    }
+    const clean = publicRecord(item)
+    if (typeof item.contact === 'string' && item.contact) {
+      clean.contact = item.contact.slice(0, LIMITS.contactMax)
+    }
+    records.push(clean)
+  }
+  return { records, problems }
+}
+
 /** 记录结构校验：供 scripts/check-feedback-contract.mjs 与自测使用 */
 export function recordProblems(record) {
   const problems = []

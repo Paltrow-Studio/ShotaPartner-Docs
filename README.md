@@ -59,7 +59,8 @@ push → main ─→ npm ci ─→ npm run build ─→ 校验 dist/index.html �
 - 也可在 Actions 页面手动 `workflow_dispatch` 触发。
 - 反馈服务地址走仓库变量 `FEEDBACK_API`（**Settings → Secrets and variables → Actions →
   Variables**），构建时注入页面，不必改代码。未设置时反馈页只读，只显示静态副本。
-  服务本身的部署见 [service/README.md](service/README.md)。
+  服务本身的部署见 [service/README.md](service/README.md)（含 Cloudflare Worker + 自定义域名
+  这条路的完整命令清单）。
 
 ## 目录结构
 

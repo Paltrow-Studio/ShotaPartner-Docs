@@ -29,6 +29,7 @@ import { timingSafeEqual } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import {
   LIMITS,
+  prepareImport,
   buildRecord,
   isStatus,
   publicRecord,
@@ -300,7 +301,7 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
-  if (req.method !== 'POST' || !['/submit', '/status'].includes(url.pathname)) {
+  if (req.method !== 'POST' || !['/submit', '/status', '/import'].includes(url.pathname)) {
     sendJson(res, 404, { ok: false, error: '没有这个接口' }, origin)
     return
   }
@@ -345,6 +346,38 @@ const server = http.createServer(async (req, res) => {
     record.updatedAt = new Date().toISOString()
     if (!DRY_RUN) await saveRecords()
     sendJson(res, 200, { ok: true, record: publicRecord(record) }, origin)
+    return
+  }
+
+  /* ---- 维护者导入（补档 / 迁移；按编号幂等）---- */
+  if (url.pathname === '/import') {
+    if (!adminOk(req)) {
+      sendJson(res, 403, { ok: false, error: ADMIN_KEY ? '管理密钥不正确' : '服务端未设置 ADMIN_KEY' }, origin)
+      return
+    }
+    const prepared = prepareImport(input)
+    if (!prepared.records.length && prepared.problems.length) {
+      sendJson(res, 400, { ok: false, error: prepared.problems[0], problems: prepared.problems }, origin)
+      return
+    }
+    const existing = new Set(records.map((record) => record.id))
+    const fresh = prepared.records.filter((record) => !existing.has(record.id))
+    if (fresh.length && !DRY_RUN) {
+      records = [...records, ...fresh]
+      await saveRecords()
+    }
+    sendJson(
+      res,
+      200,
+      {
+        ok: true,
+        imported: DRY_RUN ? 0 : fresh.length,
+        skipped: prepared.records.length - fresh.length,
+        problems: prepared.problems,
+        ...(DRY_RUN ? { wouldImport: fresh.length } : {}),
+      },
+      origin,
+    )
     return
   }
 

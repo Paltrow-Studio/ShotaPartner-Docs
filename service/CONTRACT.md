@@ -99,6 +99,25 @@
 
 成功：`{ "ok": true, "record": { /* Record */ } }`；编号不存在 → `404`。
 
+### `POST /import`（维护者）
+
+需要请求头 `X-Admin-Key: <ADMIN_KEY>`。用于补档与 Node ↔ Worker 迁移：
+请求体里的记录已经成型（编号、时间、状态自备），因此**不重新编号、不改状态**。
+
+```json
+{ "records": [ { "id": "F-0101", "title": "…", "version": "0.2.0", "content": "…",
+                 "images": ["https://example.com/a.png"], "status": "fixed",
+                 "createdAt": "2026-01-02T03:04:05.000Z", "contact": "…" } ] }
+```
+
+- 成功：`{ "ok": true, "imported": 1, "skipped": 0, "problems": [] }`。
+- **按编号幂等**：已存在的编号计入 `skipped`，不会覆盖，所以可以放心重跑。
+- 逐条校验：坏记录进 `problems` 且不导入，好记录照常导入——补档时一条坏记录不该
+  拖住其余 22 条；整批都不合法才返回 `400`。
+- 一次最多 500 条（`IMPORT_MAX`），超过 → `400`。
+- `contact` 会被保留（迁移不能让维护者丢掉回访线索），但依旧只出现在带管理密钥的响应里。
+- `DRY_RUN=1` 时回显 `wouldImport` 且不写存储。
+
 ## 通用约定
 
 - 所有响应都是 JSON（`/media` 除外），带 `Cache-Control: no-store`。

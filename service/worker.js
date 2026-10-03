@@ -27,6 +27,7 @@
 
 import {
   LIMITS,
+  prepareImport,
   validateSubmission,
   buildRecord,
   publicRecord,
@@ -421,6 +422,65 @@ async function handleSubmit(request, env, headers) {
   return jsonResponse({ ok: false, error: '编号分配失败，请稍后再试' }, 500, headers)
 }
 
+/**
+ * POST /import（维护者）：把已有记录（补档、或从 Node 版迁过来）写进 KV。
+ * 按编号幂等——重复导入只会计入 skipped，不会覆盖已有记录，所以可以放心重跑。
+ */
+async function handleImport(env, request, headers) {
+  const missing = missingStore(env, headers)
+  if (missing) return missing
+
+  if (!secretEqual(request.headers.get('x-admin-key') ?? '', env.ADMIN_KEY ?? '')) {
+    return jsonResponse(
+      { ok: false, error: env.ADMIN_KEY ? '管理密钥不正确' : '服务端未设置 ADMIN_KEY' },
+      403,
+      headers,
+    )
+  }
+
+  // 导入不带图片字节（历史记录引用的是外部地址或 /media/ 路径），
+  // 因此只按普通 JSON 的大小挡一层，不需要提交那条 12 MB 的宽限。
+  const declared = Number(request.headers.get('content-length'))
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+    return jsonResponse({ ok: false, error: '请求体过大' }, 413, headers)
+  }
+  let body
+  try {
+    body = JSON.parse((await request.text()) || '{}')
+  } catch {
+    return jsonResponse({ ok: false, error: '请求体不是合法 JSON' }, 400, headers)
+  }
+
+  const prepared = prepareImport(body)
+  if (!prepared.records.length && prepared.problems.length) {
+    return jsonResponse({ ok: false, error: prepared.problems[0], problems: prepared.problems }, 400, headers)
+  }
+
+  const dryRun = env.DRY_RUN === '1'
+  let imported = 0
+  let skipped = 0
+  for (const record of prepared.records) {
+    if (await env.RECORDS.get(`${KEY_PREFIX}${record.id}`)) {
+      skipped += 1
+      continue
+    }
+    if (!dryRun) await env.RECORDS.put(`${KEY_PREFIX}${record.id}`, JSON.stringify(record))
+    imported += 1
+  }
+
+  return jsonResponse(
+    {
+      ok: true,
+      imported: dryRun ? 0 : imported,
+      skipped,
+      problems: prepared.problems,
+      ...(dryRun ? { wouldImport: imported } : {}),
+    },
+    200,
+    headers,
+  )
+}
+
 /** POST /status（维护者） */
 async function handleStatus(request, env, headers) {
   // 未设置 ADMIN_KEY 一律拒绝（而不是「不设密码就放行」），并且用定长比较。
@@ -494,6 +554,9 @@ export default {
     }
     if (request.method === 'POST' && pathname === '/submit') {
       return handleSubmit(request, env, headers)
+    }
+    if (request.method === 'POST' && pathname === '/import') {
+      return handleImport(env, request, headers)
     }
     if (request.method === 'POST' && pathname === '/status') {
       return handleStatus(request, env, headers)

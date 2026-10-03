@@ -30,7 +30,8 @@ npm run service:test       # 46 项自测：真起进程、真走 HTTP，用临�
 ## 接口
 
 完整契约见 [`CONTRACT.md`](CONTRACT.md)：`GET /health`、`GET /records`、`GET /media/<文件>`、
-`POST /submit`、`POST /status`。字段与上限的唯一来源是 [`store.mjs`](store.mjs)，
+`POST /submit`、`POST /status`、`POST /import`（维护者补档与迁移，按编号幂等）。
+字段与上限的唯一来源是 [`store.mjs`](store.mjs)，
 站点侧对应 `src/data/feedback.ts`，两边由 `npm run check:feedback` 在构建时比对。
 
 ## 环境变量
@@ -43,7 +44,10 @@ npm run service:test       # 46 项自测：真起进程、真走 HTTP，用临�
 | `ADMIN_KEY` | 空 | 设置后才允许 `POST /status` 改状态。请用长随机串 |
 | `ALLOWED_ORIGINS` | 站点域名 + 本地端口 | 允许的浏览器来源，逗号分隔 |
 | `RATE_LIMIT_PER_HOUR` | `5` | 单 IP 每小时提交上限 |
-| `DRY_RUN` | — | 设 `1` 则只校验并回显，不写盘（演练用） |
+| `DRY_RUN` | — | 设 `1` 则只校验并回显，不写盘（演练用）；`/health` 会报 `dryRun`，一眼看出没在真正收件 |
+
+Worker 版用 KV 绑定 `RECORDS` 与同名环境变量；管理密钥在 Worker 上用
+`npx wrangler secret put ADMIN_KEY` 存成 secret，**不要写进 `wrangler.toml`**。
 
 ## 部署
 
@@ -108,21 +112,48 @@ docker run -d --name shota-feedback -p 8787:8787 \
 
 ### 方式三：Cloudflare Worker + KV（不需要服务器）
 
-`worker.js` 是同一套契约的 Worker 实现，数据放 KV：
+`worker.js` 是同一套契约的 Worker 实现，数据放 KV。以下命令在 `service/` 里执行：
 
 ```bash
+cd service
+
+# 1. 建 KV 命名空间（记下输出里的 id）
 npx wrangler kv namespace create RECORDS
-# 按输出把 binding 写进 wrangler.toml：
-#   [[kv_namespaces]]
-#   binding = "RECORDS"
-#   id = "<上一步的 id>"
-npx wrangler secret put ADMIN_KEY
+
+# 2. 生成本地配置：模板已备好，填空即可
+cp wrangler.toml.example wrangler.toml     # 把 id 填进 [[kv_namespaces]]
+#    并在文件末尾启用 [[routes]]，绑定自己的域名（见下面「为什么必须绑域名」）
+
+# 3. 存管理密钥（改状态与补档都要它；不设则这两件事一律 403）
+npx wrangler secret put ADMIN_KEY          # 输入一段长随机串
+
+# 4. 本地先演练：默认只在本机，不碰线上
+printf 'ADMIN_KEY="dev-secret"\n' > .dev.vars
+npx wrangler dev --local --port 8790
+curl http://127.0.0.1:8790/health
+
+# 5. 上传
 npx wrangler deploy
 ```
 
-注意：`*.workers.dev` 在国内多数网络下无法直连，用这种方式请绑定自定义域名。
-KV 的计数与序号分配是最终一致的，`/status` 与并发提交在极端情况下可能互相影响，
-普通反馈量级下可以接受；要绝对一致就用方式一或二。
+**为什么必须绑自定义域名**：`*.workers.dev` 在国内多数网络下无法直连，而玩家大多在国内。
+在 Cloudflare 上托管了自己的域名后，按 `wrangler.toml.example` 末尾的 `[[routes]]` 写一段
+`custom_domain = true` 即可；绑好后 `https://feedback.example.com/health` 应当直接返回 JSON。
+
+**部署完先补历史记录**，否则反馈页会因为读实时数据而把 23 条历史显示成 0：
+
+```bash
+export FEEDBACK_URL=https://feedback.example.com
+export ADMIN_KEY=那段长随机串
+node admin.mjs import --from ../public/records.json
+```
+
+导入按编号幂等，可重复执行；坏条目会列出来但不影响其余条目的导入。
+（也可以用同样的命令在 Node 版与 Worker 版之间迁移：先 `list --json` 导出，再 `import`。）
+
+注意：KV 的 list 是最终一致的，序号分配在并发提交时可能短暂撞号，此时服务端会重新
+list 并重试，最多 3 次后返回 500（宁可失败也不覆盖别人的记录）。普通反馈量级下没问题；
+要绝对强一致就用方式一或二。
 
 ### 方式四：云函数（腾讯云 / 阿里云）
 
@@ -135,12 +166,16 @@ KV 的计数与序号分配是最终一致的，`/status` 与并发提交在极�
    新建变量 `FEEDBACK_API`，值是服务地址（例如 `https://feedback.example.com`，不带结尾斜杠）。
 2. 重新部署站点（推一次 `main`，或手动触发 workflow）。构建时该地址被注入页面，
    反馈页会自动切到实时数据与在线提交。
-3. 验证：
+3. 补历史记录（见方式三末尾的 `admin.mjs import`），然后验证：
 
 ```bash
 curl https://feedback.example.com/health
 curl 'https://feedback.example.com/records?limit=5'
 ```
+
+4. 真机走一遍：打开站点反馈页，提交一条带截图的内容，确认拿到编号、记录出现在列表里、
+   进度区把待处理计为 1。这一步不能省——CORS 白名单、HTTPS、图片大小任何一处不对，
+   都只有真实浏览器能暴露出来。
 
 ## 维护
 
@@ -152,6 +187,7 @@ node service/admin.mjs list                        # 全部记录（带走联系
 node service/admin.mjs list --status pending       # 只看待处理
 node service/admin.mjs show F-0031                 # 单条详情（含联系方式）
 node service/admin.mjs status F-0031 fixed         # 改状态：进度区立即更新
+node service/admin.mjs import --from public/records.json   # 补档 / 迁移（按编号幂等）
 
 # 导出站点用的静态副本（服务不可用时页面会显示它）
 node service/admin.mjs export --out public/records.json

@@ -15,3 +15,8 @@ __pycache__/
 
 # ── 反馈服务的运行时数据（玩家提交的记录与截图，禁止入库） ──
 service/data/
+
+# ── Cloudflare Worker 的本地/个人配置（含命名空间 id 与密钥，禁止入库） ──
+service/wrangler.toml
+service/.dev.vars
+service/.wrangler/
