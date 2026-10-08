@@ -40,13 +40,23 @@ async function fetchJson(url: string, init?: RequestInit): Promise<{ status: num
   return { status: response.status, json }
 }
 
+/**
+ * 新到旧排序，同一时间的按编号倒序。
+ *
+ * 这里必须自己排一次：静态副本是「导出时的数组顺序」，服务端是「createdAt 倒序」，
+ * 两边顺序不一致时，同一个页面在只读模式与实时模式下会把最新一条显示在不同的位置。
+ */
 function normalizeRecords(payload: unknown): FeedbackRecord[] {
   const list = Array.isArray(payload)
     ? payload
     : ((payload as RecordsPayload | null)?.records ?? [])
-  return (list as FeedbackRecord[]).filter(
-    (record) => record && typeof record.id === 'string' && typeof record.title === 'string',
-  )
+  return (list as FeedbackRecord[])
+    .filter((record) => record && typeof record.id === 'string' && typeof record.title === 'string')
+    .sort(
+      (a, b) =>
+        String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')) ||
+        String(b.id ?? '').localeCompare(String(a.id ?? '')),
+    )
 }
 
 async function loadSeed(): Promise<LoadResult> {

@@ -246,9 +246,11 @@ export function SubmitForm({ onSubmitted }: { onSubmitted: (record: FeedbackReco
 
         {/* ---------- 右：提交 ---------- */}
         <div className="lg:border-l lg:border-dashed lg:border-line lg:pl-7">
-          <h3 className="text-[1rem] font-semibold text-ink">提交</h3>
+          <h3 className="text-[1rem] font-semibold text-ink">提交方式</h3>
           <p className="mt-2 text-[0.85rem] leading-relaxed text-ink-soft">
-            提交后立即出现在下面的记录里，并得到一个编号；不需要注册，也不需要跳转到别的网站。
+            {FEEDBACK_API
+              ? '提交后立即出现在下面的记录里，并得到一个编号；不需要注册，也不需要跳转到别的网站。'
+              : '反馈服务还没上线，这里的按钮改成把内容复制出来，你把它发给维护者即可。'}
           </p>
 
           <label className="mt-4 block">
@@ -273,44 +275,54 @@ export function SubmitForm({ onSubmitted }: { onSubmitted: (record: FeedbackReco
             className="sr-only"
           />
 
-          <button
-            type="button"
-            onClick={submit}
-            disabled={!canSubmit}
-            className={`mt-4 w-full rounded-md border px-4 py-2.5 text-[0.9rem] transition-colors ${
-              canSubmit ? 'border-seal text-seal hover:bg-paper-sunk' : 'cursor-not-allowed border-line text-ink-faint'
-            }`}
-          >
-            {busy ? '正在提交…' : '提交反馈'}
-          </button>
-
-          <p className="mt-2 text-[0.8rem] text-ink-faint">
-            {ready ? '提交即写入反馈服务，无需账号。' : `还差：${problems.join('；')}`}
-          </p>
-
-          {!FEEDBACK_API ? (
-            <div className="mt-3">
-              <Note title="注意：">{NO_SERVICE_MESSAGE}</Note>
+          {/* 服务没上线时不要摆一个按不动的「提交反馈」：那会让人以为自己填错了。
+              这时唯一的出路是复制内容，所以把它做成主按钮。 */}
+          {FEEDBACK_API ? (
+            <>
+              <button
+                type="button"
+                onClick={submit}
+                disabled={!canSubmit}
+                className={`mt-4 w-full rounded-md border px-4 py-2.5 text-[0.9rem] transition-colors ${
+                  canSubmit
+                    ? 'border-seal text-seal hover:bg-paper-sunk'
+                    : 'cursor-not-allowed border-line text-ink-faint'
+                }`}
+              >
+                {busy ? '正在提交…' : '提交反馈'}
+              </button>
+              <p className="mt-2 text-[0.8rem] text-ink-faint">
+                {ready ? '提交即写入反馈服务，无需账号。' : `还差：${problems.join('；')}`}
+              </p>
+            </>
+          ) : (
+            <>
               <button
                 type="button"
                 onClick={copyDraft}
                 disabled={!title.trim() && !content.trim()}
-                className="mt-2 rounded-md border border-line px-3 py-1.5 text-[0.83rem] text-ink-soft transition-colors enabled:hover:border-line-strong enabled:hover:text-ink disabled:cursor-not-allowed disabled:text-ink-faint"
+                className="mt-4 w-full rounded-md border border-seal px-4 py-2.5 text-[0.9rem] text-seal transition-colors enabled:hover:bg-paper-sunk disabled:cursor-not-allowed disabled:border-line disabled:text-ink-faint"
               >
                 {draftCopied ? '已复制，去发给维护者' : '复制填好的内容'}
               </button>
-              {FALLBACK_FEEDBACK_URL ? (
-                <a
-                  href={FALLBACK_FEEDBACK_URL}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="mt-2 inline-block text-[0.85rem] text-ink-soft link-quiet"
-                >
-                  {FALLBACK_FEEDBACK_LABEL} →
-                </a>
-              ) : null}
-            </div>
-          ) : null}
+              <p className="mt-2 text-[0.8rem] text-ink-faint">
+                {ready ? '复制后发给维护者即可，编号与进度等这项功能上线后才有。' : `还差：${problems.join('；')}`}
+              </p>
+              <div className="mt-3">
+                <Note title="注意：">{NO_SERVICE_MESSAGE}</Note>
+                {FALLBACK_FEEDBACK_URL ? (
+                  <a
+                    href={FALLBACK_FEEDBACK_URL}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="mt-2 inline-block text-[0.85rem] text-ink-soft link-quiet"
+                  >
+                    {FALLBACK_FEEDBACK_LABEL} →
+                  </a>
+                ) : null}
+              </div>
+            </>
+          )}
 
           {problem ? (
             <p role="alert" className="mt-3 rounded-md border border-seal/40 bg-paper-sunk/60 px-3 py-2 text-[0.83rem] text-seal">

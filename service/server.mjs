@@ -219,7 +219,12 @@ function listRecords(url, withContact = false) {
   const limitRaw = Number(url.searchParams.get('limit') ?? 200)
   const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(Math.trunc(limitRaw), 1), 200) : 200
   const filtered = isStatus(status) ? records.filter((record) => record.status === status) : records
-  const sorted = [...filtered].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+  // 次级键按编号倒序：同一批导入的记录时间戳可能完全相同，没有次级键时顺序不稳定，
+  // 分页或前后两次请求会给出不同的排列。Worker 版与页面侧用的是同一套规则。
+  const sorted = [...filtered].sort(
+    (a, b) =>
+      String(b.createdAt).localeCompare(String(a.createdAt)) || String(b.id).localeCompare(String(a.id)),
+  )
   return {
     total: sorted.length,
     records: sorted.slice(0, limit).map((record) => ({

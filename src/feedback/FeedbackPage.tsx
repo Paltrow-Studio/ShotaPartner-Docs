@@ -1,12 +1,7 @@
 import { useEffect, useState } from 'react'
-import {
-  DOCS_URL,
-  FEEDBACK_API,
-  LIMITS,
-  RECORDS_SEED_URL,
-  type FeedbackRecord,
-} from '../data/feedback'
+import { DOCS_URL, LIMITS, type FeedbackRecord } from '../data/feedback'
 import { loadRecords } from '../lib/feedbackClient'
+import { DISCUSSIONS } from '../data/site'
 import { useTheme } from '../lib/theme'
 import { Note } from '../components/paper'
 import { ProgressPanel } from './ProgressPanel'
@@ -184,6 +179,11 @@ export function FeedbackPage() {
         </ul>
 
         <section id="submit" className="mt-10 scroll-mt-24">
+          <div className="flex items-center gap-3">
+            <span className="chapter-mark">提交</span>
+            <span className="h-px flex-1 bg-line" />
+          </div>
+          <h2 className="mb-5 mt-3 text-2xl sm:text-[1.7rem]">提交反馈</h2>
           <SubmitForm onSubmitted={addRecord} />
         </section>
 
@@ -217,7 +217,11 @@ export function FeedbackPage() {
         <section className="mt-14">
           <div className="grid gap-3 lg:grid-cols-2">
             <Note title="受理范围：">
-              可复现的问题、界面与数值错误、崩溃，以及具体的改进建议。安装与配置类提问、玩法讨论请到讨论区，那里更容易被其他玩家看到。
+              可复现的问题、界面与数值错误、崩溃，以及具体的改进建议。安装与配置类提问、玩法讨论请到{' '}
+              <a href={DISCUSSIONS} target="_blank" rel="noreferrer noopener" className="link-quiet text-seal">
+                讨论区
+              </a>
+              ，那里更容易被其他玩家看到。
             </Note>
             <Note title="隐私：">
               填写的联系方式只会写进反馈服务的存储、供维护者回访，不会出现在这一页的公开记录里；截图会公开显示，注意别把自己的账号或服务器地址拍进去。
@@ -227,17 +231,9 @@ export function FeedbackPage() {
 
         <footer className="mt-14 border-t border-dashed border-line pt-5 text-[0.82rem] text-ink-faint">
           <p>
-            反馈数据由本站自己的反馈服务保存（
-            <code className="rounded-sm border border-line bg-paper-sunk px-1 text-[0.78rem]">
-              {FEEDBACK_API || '未配置服务地址'}
-            </code>
-            ）。记录与进度不依赖任何第三方平台；
-            {state.live ? '当前为实时数据。' : (
-              <>
-                当前显示静态副本，读取自{' '}
-                <code className="rounded-sm border border-line bg-paper-sunk px-1 text-[0.78rem]">{RECORDS_SEED_URL}</code>。
-              </>
-            )}
+            {state.live
+              ? '记录与进度保存在本站自己的反馈服务里，改状态后这一页立刻更新。'
+              : '记录与进度不依赖任何第三方平台。反馈服务尚未上线，这一页显示的是最近一次同步的记录。'}
           </p>
           <p className="mt-2">
             <a href={DOCS_URL} className="link-quiet">

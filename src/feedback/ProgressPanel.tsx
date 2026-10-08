@@ -57,6 +57,12 @@ export function ProgressPanel({ records }: { records: FeedbackRecord[] }) {
         </div>
       </div>
 
+      {total > 0 && fixed === 0 ? (
+        <p className="mt-2 text-[0.82rem] text-ink-faint">
+          目前的 {total} 条都还没有标记为已修复：其中大多是早期导入的反馈。
+        </p>
+      ) : null}
+
       <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {feedbackStatuses.map((status) => (
           <li key={status.id} className="rounded-md border border-dashed border-line px-3 py-2.5">

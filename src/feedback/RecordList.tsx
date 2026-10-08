@@ -35,8 +35,19 @@ function RecordItem({ record }: { record: FeedbackRecord }) {
       {record.images.length ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {record.images.map((src) => {
-            if (failed.includes(src)) return null
             const url = resolveImageUrl(src)
+            if (failed.includes(src)) {
+              // 早期记录的截图存在 GitHub 上，国内多半加载不出来。
+              // 与其让图悄悄消失（内容里明明说了「见图」），不如摆明原因。
+              return (
+                <span
+                  key={src}
+                  className="flex h-20 w-32 items-center justify-center rounded-md border border-dashed border-line px-2 text-center text-[0.7rem] leading-tight text-ink-faint"
+                >
+                  截图加载不出来
+                </span>
+              )
+            }
             return (
               <a
                 key={src}
@@ -47,7 +58,7 @@ function RecordItem({ record }: { record: FeedbackRecord }) {
               >
                 <img
                   src={url}
-                  alt=""
+                  alt="反馈截图"
                   loading="lazy"
                   className="h-20 w-32 object-cover"
                   onError={() => setFailed((current) => [...current, src])}
@@ -56,6 +67,15 @@ function RecordItem({ record }: { record: FeedbackRecord }) {
             )
           })}
         </div>
+      ) : null}
+
+      {failed.length ? (
+        <p className="mt-2 text-[0.78rem] text-ink-faint">
+          {/* 不把原因说死：网络不通与「原图在 GitHub 上已经失效」都会走到这里，
+              而这 23 条里确实各有一例。 */}
+          有截图没能加载出来
+          {record.legacyUrl ? '。早期记录的截图存放在 GitHub 上，网络不通或原图已失效都会这样' : ''}。
+        </p>
       ) : null}
 
       <p className="num mt-3 flex flex-wrap items-center gap-x-3 text-[0.78rem] text-ink-faint">

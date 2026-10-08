@@ -3,7 +3,8 @@
 **伙伴物语（Partner Monogatari）** 的玩法说明页与公开问题反馈区。
 
 - 🌐 线上地址：**https://paltrow-studio.github.io/ShotaPartner-Docs/**
-- 🐛 问题反馈：[新建 issue](https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/new/choose) · [浏览已有 issue](https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues)
+- 🐛 问题反馈：[反馈区（提交 / 进度 / 全部记录）](https://paltrow-studio.github.io/ShotaPartner-Docs/feedback.html) · 不需要 GitHub 账号
+- 🗂 历史反馈：早先的 23 条 issue 已导入反馈区（保留原讨论链接）；仓库里的 issue 区仅作维护者内部记录
 - 💬 提问与交流：[Discussions](https://github.com/Paltrow-Studio/ShotaPartner-Docs/discussions)
 
 ## 这个仓库是做什么的
