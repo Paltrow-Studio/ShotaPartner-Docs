@@ -3,7 +3,6 @@
 # 后续编号与进度以反馈区为准；这里的标签「反馈」是同步识别的凭据，不要删。
 name: 提交反馈（会同步到反馈区）
 description: 需要 GitHub 账号；不想注册请走反馈区（链接见右上角）
-title: ""
 labels: ["反馈"]
 body:
   - type: input
