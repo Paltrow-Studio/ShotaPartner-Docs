@@ -15,7 +15,7 @@
 
 name = "shota-feedback"
 main = "worker.js"
-# 与 service/store.mjs 同处一个模块图，Worker 会把它一起打包，不需要额外配置
+# 与 service/store.mjs、service/github.mjs 同处一个模块图，Worker 会一起打包，不需要额外配置
 compatibility_date = "2026-01-01"
 
 # KV 绑定名必须是 RECORDS（worker.js 只认这个名字）
@@ -32,7 +32,18 @@ RATE_LIMIT_PER_HOUR = "5"
 # 想先演练（只校验、不写 KV）时改成 "1"，验证完记得删掉这一行
 # DRY_RUN = "1"
 
-# ADMIN_KEY 不要写在这里，用 npx wrangler secret put ADMIN_KEY 存成 secret。
+# ADMIN_KEY 与 GITHUB_TOKEN 都不要写在这里，用 secret 存：
+#   npx wrangler secret put ADMIN_KEY
+#   npx wrangler secret put GITHUB_TOKEN     # 可选：issue 双向同步的 fine-grained PAT（只授本仓库 Issues 读写）
+#
+# 同步相关的可选 [vars]（不设 = 完全不碰 GitHub，见 github.mjs）：
+# GITHUB_REPO = "Paltrow-Studio/ShotaPartner-Docs"
+# PUBLIC_BASE_URL = "feedback.example.com"   # 拼 issue 正文里的截图绝对链接
+#
+# 定时同步：Worker 没有常驻定时器，提交与改状态会在服务内自动触发一轮；
+# 需要补账（例如有人在 GitHub 上改了状态）时手动跑：
+#   curl -X POST -H "x-admin-key: $ADMIN_KEY" https://feedback.example.com/sync
+# 也可以放进 GitHub Actions / 外部 cron 定时调用。
 
 # ── 自定义域名（推荐，国内可直连的前提）─────────────────────────────
 # 在 Cloudflare 上已经托管了 example.com 的前提下，加一段：
