@@ -100,6 +100,8 @@ export type FeedbackRecord = {
   updatedAt: string
   /** 早期记录指向原 issue；新提交没有这个字段 */
   legacyUrl?: string
+  /** 同步到 issue 区后指向镜像 issue；未启用同步或还没建时没有这个字段 */
+  issueUrl?: string
 }
 
 export type RecordsPayload = {
