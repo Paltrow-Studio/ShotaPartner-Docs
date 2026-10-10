@@ -1,0 +1,29 @@
+# 可选的 issue 反馈入口：给本来就在 GitHub 上的人用。
+# 提交后会被反馈服务的 issue 同步（service/github.mjs）导入反馈区，
+# 后续编号与进度以反馈区为准；这里的标签「反馈」是同步识别的凭据，不要删。
+name: 提交反馈（会同步到反馈区）
+description: 需要 GitHub 账号；不想注册请走反馈区（链接见右上角）
+title: ""
+labels: ["反馈"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      description: 出问题时使用的模组版本；不确定就写「不确定」
+      placeholder: 0.3.1（当前版本）
+    validations:
+      required: true
+  - type: textarea
+    id: content
+    attributes:
+      label: 内容
+      description: 发生了什么、怎么重现、你希望是什么结果。日志请先传到 mclo.gs 或 Gist，把链接贴进来。
+      placeholder: 伙伴在工作时不会拾取掉落物，站着不动也一直触发工作动画。
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        > **issue 全文公开**：不要在这里贴邮箱、服务器地址等隐私信息；需要回访请到[反馈区](https://paltrow-studio.github.io/ShotaPartner-Docs/feedback.html)填写联系方式。
+        > 进度（待处理 / 排查中 / 已修复 / 已关闭）以反馈区的编号为准。

@@ -1,12 +1,15 @@
 # 伙伴物语 / Partner Monogatari —— Issue 模板总配置
 #
-# 注意事项（维护者请先读）：
-#   1. 反馈区已经独立成页（feedback.html），**不再使用 GitHub 的 Issue 表单**：
-#      玩家不需要 GitHub 账号，填标题 / 版本 / 内容（可选截图）即可，数据由自建反馈服务
-#      （service/）保存。本目录下已没有任何 Issue 模板，玩家在这里只能看到下面的联系链接。
-#   2. blank_issues_enabled: false 是有意为之：GitHub 的 issue 通道对普通玩家来说门槛太高
-#      （要账号、要填环境表）。已有的历史 issue 保留在仓库里供查询，新反馈一律走站点。
-#   3. 三个模组仓库（ShotaPartner-Core / ShotaPartner-API / ShotaPartner-Extra-School）目前是私有的。
+# 维护者请先读：
+#   1. 反馈的**首选入口**仍是反馈区（feedback.html）：不需要账号，填标题 / 版本 /
+#      内容（可选截图）即可，数据由自建反馈服务（service/）保存。
+#   2. feedback.yml 是给「本来就在 GitHub 上」的人留的可选入口：在这里开的 issue
+#      会被反馈服务的 issue 同步（service/github.mjs）识别「反馈」标签并导入反馈区，
+#      编号与进度随后以反馈区为准。表单里的「联系方式」没有做——**issue 全文公开**，
+#      需要回访请到反馈区填写。
+#   3. blank_issues_enabled: false 是有意为之：空白 issue 不带「反馈」标签，
+#      不会被同步导入，只作维护者内部记录。
+#   4. 三个模组仓库（ShotaPartner-Core / ShotaPartner-API / ShotaPartner-Extra-School）目前是私有的。
 
 blank_issues_enabled: false
 contact_links:
