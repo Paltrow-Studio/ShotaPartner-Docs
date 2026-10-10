@@ -200,6 +200,36 @@ async function main() {
     check(unknown.status === 404, '编号不存在 → 404', `实际 ${unknown.status}`)
     const fixed = await post('/status', { id: 'F-0001', status: 'fixed' }, { 'x-admin-key': ADMIN_KEY })
     check(fixed.status === 200 && fixed.json?.record?.status === 'fixed', '改状态成功', JSON.stringify(fixed.json?.record?.status))
+
+    /* --- issue 同步端点（本自测不配 GITHUB_TOKEN：只验证鉴权与开关） --- */
+    const syncNoKey = await post('/sync', {})
+    check(syncNoKey.status === 403, '/sync 无管理密钥 → 403', `实际 ${syncNoKey.status}`)
+    const syncNoConfig = await post('/sync', {}, { 'x-admin-key': ADMIN_KEY })
+    check(
+      syncNoConfig.status === 400 && /GITHUB_TOKEN/.test(syncNoConfig.json?.error ?? ''),
+      '/sync 未配置 GITHUB_TOKEN → 400 且说明原因',
+      `实际 ${syncNoConfig.status} ${JSON.stringify(syncNoConfig.json)}`,
+    )
+
+    /* --- issue 链接写回（Actions 同步用） --- */
+    const linkNoKey = await post('/link', { id: 'F-0001', issueUrl: 'https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/31' })
+    check(linkNoKey.status === 403, '/link 无管理密钥 → 403', `实际 ${linkNoKey.status}`)
+    const linkBad = await post('/link', { id: 'F-0001', issueUrl: 'javascript:alert(1)' }, { 'x-admin-key': ADMIN_KEY })
+    check(linkBad.status === 400 && !!linkBad.json?.error, '/link 链接不合法 → 400', `实际 ${linkBad.status}`)
+    const linkMissing = await post('/link', { id: 'F-0999', issueUrl: 'https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/31' }, { 'x-admin-key': ADMIN_KEY })
+    check(linkMissing.status === 404, '/link 编号不存在 → 404', `实际 ${linkMissing.status}`)
+    const beforeLink = (await (await fetch(`${BASE}/records`)).json()).records[0]
+    const linkOk = await post('/link', { id: 'F-0001', issueUrl: 'https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/31' }, { 'x-admin-key': ADMIN_KEY })
+    check(
+      linkOk.status === 200 && linkOk.json?.record?.issueUrl?.endsWith('/issues/31'),
+      '/link 写回成功且公开响应带 issueUrl',
+      `实际 ${linkOk.status} ${JSON.stringify(linkOk.json)}`,
+    )
+    check(
+      linkOk.json?.record?.updatedAt === beforeLink.updatedAt && linkOk.json?.record?.status === beforeLink.status,
+      '/link 不改 updatedAt 与 status（补链接不是内容变化）',
+      `updatedAt ${beforeLink.updatedAt} → ${linkOk.json?.record?.updatedAt}`,
+    )
     const afterFix = await (await fetch(`${BASE}/records?status=fixed`)).json()
     check(afterFix.total === 1, '按状态筛选可用', `实际 ${afterFix.total}`)
     const afterOther = await (await fetch(`${BASE}/records?status=pending`)).json()

@@ -10,6 +10,7 @@
  *   node service/admin.mjs list --status pending     只看待处理
  *   node service/admin.mjs show F-0031               看单条（含联系方式）
  *   node service/admin.mjs status F-0031 fixed       改状态
+ *   node service/admin.mjs sync                      跑一轮 issue 同步（需服务端配置 GITHUB_TOKEN）
  *   node service/admin.mjs export --out public/records.json
  *                                                   导出静态种子给站点用
  *
@@ -99,6 +100,7 @@ const commands = {
     if (record.updatedAt) console.log(`更新　　${record.updatedAt}`)
     console.log(`联系　　${record.contact ?? '（未提供，或未带 ADMIN_KEY）'}`)
     if (record.legacyUrl) console.log(`原链接　${record.legacyUrl}`)
+    if (record.issueUrl) console.log(`issue　　${record.issueUrl}`)
     console.log(`图片　　${record.images.length ? record.images.join('、') : '（无）'}`)
     console.log('内容：')
     console.log(record.content)
@@ -111,6 +113,26 @@ const commands = {
     if (!ADMIN_KEY) throw new Error('改状态需要 ADMIN_KEY 环境变量（与服务端一致）')
     const data = await api('/status', { method: 'POST', body: JSON.stringify({ id, status }) })
     console.log(`${data.record.id} → ${STATUS_LABEL[data.record.status] ?? data.record.status}`)
+  },
+
+  async sync() {
+    // 主动跑一轮 issue 同步：补建缺失的 issue、导入 issue 区里新建的、按时间戳对账。
+    // 提交与改状态本来就会后台自动跑，这条命令用于部署后首跑与手动补账。
+    if (!ADMIN_KEY) throw new Error('同步需要 ADMIN_KEY 环境变量（与服务端一致）')
+    const data = await api('/sync', { method: 'POST', body: '{}' })
+    if (data.dryRun) {
+      console.log('演练模式（DRY_RUN）：未执行同步')
+      return
+    }
+    console.log(
+      `同步完成：对账 ${data.checked} 条 issue —— 新建 ${data.created}、补链 ${data.linked}、` +
+        `导入 ${data.imported}、推送 ${data.pushed}、回读 ${data.pulled}、无变化 ${data.unchanged}`,
+    )
+    if (data.skipped) console.log(`提示：${data.skipped}`)
+    if (data.problems?.length) {
+      console.log(`未完成 ${data.problems.length} 项：`)
+      for (const problem of data.problems.slice(0, 10)) console.log(`  · ${problem}`)
+    }
   },
 
   async import() {
@@ -157,7 +179,7 @@ async function main() {
   const run = commands[command]
   if (!run) {
     console.error(`未知命令：${command}`)
-    console.error('可用：list、show、status、import、export')
+    console.error('可用：list、show、status、sync、import、export')
     process.exit(2)
   }
   try {

@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "seed:legacy": "node scripts/import-legacy-issues.mjs",
     "service": "node service/server.mjs",
-    "service:test": "node service/selftest.mjs"
+    "service:test": "node service/selftest.mjs && node service/github.selftest.mjs && node scripts/sync-issues.selftest.mjs",
+    "service:test:worker": "node service/worker.selftest.mjs"
   },
   "dependencies": {
     "react": "^19.1.0",

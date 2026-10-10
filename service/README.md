@@ -30,7 +30,9 @@ npm run service:test       # 46 项自测：真起进程、真走 HTTP，用临�
 ## 接口
 
 完整契约见 [`CONTRACT.md`](CONTRACT.md)：`GET /health`、`GET /records`、`GET /media/<文件>`、
-`POST /submit`、`POST /status`、`POST /import`（维护者补档与迁移，按编号幂等）。
+`POST /submit`、`POST /status`、`POST /link`（写回镜像 issue 链接）、
+`POST /import`（维护者补档与迁移，按编号幂等）、
+`POST /sync`（维护者，主动跑一轮 issue 同步）。
 字段与上限的唯一来源是 [`store.mjs`](store.mjs)，
 站点侧对应 `src/data/feedback.ts`，两边由 `npm run check:feedback` 在构建时比对。
 
@@ -45,9 +47,15 @@ npm run service:test       # 46 项自测：真起进程、真走 HTTP，用临�
 | `ALLOWED_ORIGINS` | 站点域名 + 本地端口 | 允许的浏览器来源，逗号分隔 |
 | `RATE_LIMIT_PER_HOUR` | `5` | 单 IP 每小时提交上限 |
 | `DRY_RUN` | — | 设 `1` 则只校验并回显，不写盘（演练用）；`/health` 会报 `dryRun`，一眼看出没在真正收件 |
+| `GITHUB_TOKEN` | 空 | **issue 双向同步开关**：fine-grained PAT，只需本仓库的 Issues 读写；不设则完全不碰 GitHub |
+| `GITHUB_REPO` | `Paltrow-Studio/ShotaPartner-Docs` | 同步目标仓库（`owner/repo`） |
+| `GITHUB_API_BASE` | `https://api.github.com` | GitHub API 地址；自测与 GHES 用它指向别处 |
+| `PUBLIC_BASE_URL` | 空 | 服务公网地址，用来把 `/media/…` 拼成 issue 正文里的绝对截图链接；不设则 issue 里不摆图 |
+| `GITHUB_SYNC_MINUTES` | `0` | Node 版：>0 时按该分钟数自动跑同步（提交与改状态本来就会触发后台同步） |
+| `FEEDBACK_PAGE_URL` | 反馈页地址 | issue 正文里回链反馈页的地址 |
 
-Worker 版用 KV 绑定 `RECORDS` 与同名环境变量；管理密钥在 Worker 上用
-`npx wrangler secret put ADMIN_KEY` 存成 secret，**不要写进 `wrangler.toml`**。
+Worker 版用 KV 绑定 `RECORDS` 与同名环境变量；管理密钥与 `GITHUB_TOKEN` 在 Worker 上用
+`npx wrangler secret put <名字>` 存成 secret，**不要写进 `wrangler.toml`**。
 
 ## 部署
 
@@ -188,6 +196,7 @@ node service/admin.mjs list --status pending       # 只看待处理
 node service/admin.mjs show F-0031                 # 单条详情（含联系方式）
 node service/admin.mjs status F-0031 fixed         # 改状态：进度区立即更新
 node service/admin.mjs import --from public/records.json   # 补档 / 迁移（按编号幂等）
+node service/admin.mjs sync                        # 主动跑一轮 issue 同步（需 GITHUB_TOKEN）
 
 # 导出站点用的静态副本（服务不可用时页面会显示它）
 node service/admin.mjs export --out public/records.json
@@ -195,6 +204,37 @@ node service/admin.mjs export --out public/records.json
 
 状态取值：`pending`（待处理）、`investigating`（排查中）、`fixed`（已修复）、`closed`（已关闭）。
 导出静态副本后提交它，站点在只读模式下也能看到最新进度。
+
+### 与 issue 区的双向同步
+
+同步有两种跑法，**二选一，不能同时开**（两边同时跑会在「记录还没写回 issueUrl」
+的窗口里各建一条 issue）。对账规则是同一套代码（[`github.mjs`](github.mjs)）：
+
+| 跑法 | token 放哪 | 触发 | 适合 |
+| --- | --- | --- | --- |
+| **GitHub Actions**（推荐，见根 README「跑法一」） | 仓库 Actions secret，服务端零 token | workflow 定时 + issue 事件 + 手动 | 服务端访问 `api.github.com` 不稳（国内 VPS） |
+| **服务直连**（本节下表） | 服务端环境变量 / Worker secret | 提交 / 改状态后防抖 3 秒，或 `admin.mjs sync` | 服务端能稳定访问 GitHub（境外 VPS / Worker） |
+
+配置 `GITHUB_TOKEN` 后（服务直连），反馈服务把 issue 区当**镜像**维护：
+
+| 方向 | 触发 | 行为 |
+| --- | --- | --- |
+| 记录 → issue | 提交 / 改状态后自动（防抖 3 秒），或 `admin.mjs sync` | 没有 issue 的记录补建（标题 `[F-0031] …`，带「反馈 + 状态」标签）；状态变化推送开关与标签 |
+| issue → 记录 | 每轮同步 | 有人在 GitHub 上改了状态 → 回读；有人开了带「反馈」标签的新 issue → 导入成新记录 |
+| 对账方向 | 每轮同步 | 按 `updatedAt` 与 `updated_at` 时间戳取较新的一侧，两边一致时什么都不做（幂等） |
+
+- **token**：GitHub → *Settings → Developer settings → Fine-grained tokens*，
+  只授 `Paltrow-Studio/ShotaPartner-Docs` 的 `Issues: Read and write`，别给仓库写权限。
+- **状态映射**：`pending`/`investigating` ↔ issue open；`fixed`/`closed` ↔ issue closed；
+  标签分别是「待处理 / 排查中 / 已修复 / 已关闭」，另有一个识别标签「反馈」。
+- **联系方式永不进 issue**（issue 全文公开）；截图以 `PUBLIC_BASE_URL` 的绝对地址引用，
+  该地址必须公网可达，否则 issue 里只有文字。
+- 早期带 `legacyUrl` 的 23 条历史记录**不建镜像**（它们本来就有原 issue 链接）。
+- 部署后首跑：`node service/admin.mjs sync`。之后提交与改状态会自动带同步；
+  Node 版还可用 `GITHUB_SYNC_MINUTES=30` 开定时，Worker 版建议在 GitHub Actions
+  或 cron 里定时调 `POST /sync`。
+- 未配置 `GITHUB_TOKEN` 时同步完全关闭，服务行为与从前一致；同步失败只进日志与
+  `/sync` 的 `problems`，**不影响玩家提交**。
 
 ### 备份
 

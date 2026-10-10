@@ -9,6 +9,10 @@
 静态站点存不下玩家提交的数据，而 GitHub 的 issue 表单要求玩家有账号、还得填一堆字段。
 所以：**页面自己收，服务自己存**，玩家只需要填标题 / 版本 / 内容，可选附截图。
 
+配置了 `GITHUB_TOKEN` 时，服务端会把记录**双向同步**到仓库的 issue 区（见
+[`github.mjs`](github.mjs)）：提交补建 issue、改状态推送开关与标签、issue 侧的改动回读进记录。
+玩家与页面全程不接触 GitHub；未配置则同步完全关闭，行为与从前一致。
+
 ## 记录（Record）
 
 ```json
@@ -29,6 +33,8 @@
 - `status`：`pending` / `investigating` / `fixed` / `closed`（见 `store.mjs` 的 `STATUSES`）。
 - `images`：相对路径 `/media/<文件名>`（相对服务基址）或 `http(s)` 绝对地址（历史记录的外链图）。
 - `legacyUrl`：早期 issue 导入时保留的原链接，新提交没有这个字段。
+- `issueUrl`：启用 issue 同步后指向镜像 issue（`…/issues/<编号>`）；未同步的记录没有这个字段，
+  页面据此显示「在 issue 区查看」入口。**联系方式永不写入 issue**——issue 是公开的。
 - **`contact` 不出现在公开响应里**：只有带对了 `X-Admin-Key` 的 `GET /records` 才带它，
   供维护者用 `service/admin.mjs` 回访；页面永远拿不到它。
 
@@ -118,6 +124,35 @@
 - `contact` 会被保留（迁移不能让维护者丢掉回访线索），但依旧只出现在带管理密钥的响应里。
 - `DRY_RUN=1` 时回显 `wouldImport` 且不写存储。
 
+### `POST /link`（维护者）
+
+需要请求头 `X-Admin-Key: <ADMIN_KEY>`。GitHub Actions 同步（`scripts/sync-issues.mjs`）
+在 GitHub 上建好镜像 issue 后，用它把链接写回记录：
+
+```json
+{ "id": "F-0031", "issueUrl": "https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/31" }
+```
+
+- 成功：`{ "ok": true, "record": { /* Record */ } }`；编号不存在 → `404`、链接不合法 → `400`。
+- **不改 `updatedAt`**：补链接不是内容变化，动了会让下一轮对账的「谁更新」判断失真。
+- `issueUrl` 必须形如 `…/issues/<数字>`；写入后记录的公开响应会带上它，页面据此显示
+  「在 issue 区查看」入口。
+
+### `POST /sync`（维护者）
+
+需要请求头 `X-Admin-Key: <ADMIN_KEY>`，主动跑一轮 issue 同步（建缺失的、导入 issue 区
+新建的、按时间戳对账推 / 回读）。提交与改状态本来就会后台自动跑，这条用于部署后首跑与手动补账。
+
+成功：`200`
+
+```json
+{ "ok": true, "checked": 23, "created": 2, "linked": 0, "imported": 1,
+  "pushed": 3, "pulled": 1, "unchanged": 16, "problems": [] }
+```
+
+失败：`400` 未配置 `GITHUB_TOKEN`、`403` 密钥不对、`502` GitHub 侧报错（`error` 带原因）。
+`DRY_RUN=1` 时回显 `{ "ok": true, "dryRun": true }` 且不碰 GitHub。
+
 ## 通用约定
 
 - 所有响应都是 JSON（`/media` 除外），带 `Cache-Control: no-store`。
@@ -134,3 +169,4 @@
   | 允许来源 | `ALLOWED_ORIGINS` | `ALLOWED_ORIGINS` | 逗号分隔 |
   | 限流 | `RATE_LIMIT_PER_HOUR` | `RATE_LIMIT_PER_HOUR` | |
   | 演练 | `DRY_RUN=1` | `DRY_RUN=1` | 只校验并回显，不落盘 |
+  | issue 同步 | `GITHUB_TOKEN` / `GITHUB_REPO` / `GITHUB_API_BASE` / `PUBLIC_BASE_URL` / `GITHUB_SYNC_MINUTES` | `GITHUB_TOKEN` / `GITHUB_REPO` / `GITHUB_API_BASE` / `PUBLIC_BASE_URL` | 都不设则同步关闭；`GITHUB_TOKEN` 是 fine-grained PAT，只需目标仓库的 Issues 读写权限 |

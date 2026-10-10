@@ -20,6 +20,11 @@
  *   ALLOWED_ORIGINS       逗号分隔；默认站点域名 + 本地预览/开发端口
  *   RATE_LIMIT_PER_HOUR   单 IP 每小时提交上限，默认 5
  *   DRY_RUN=1             不写盘
+ *   GITHUB_TOKEN / GITHUB_REPO / PUBLIC_BASE_URL
+ *                         配置后开启 issue 双向同步（见 github.mjs）；
+ *                         提交与改状态会后台补建 / 推送 issue，
+ *                         POST /sync 主动跑一轮。不配则完全不碰 GitHub。
+ *   GITHUB_SYNC_MINUTES   >0 时按这个间隔自动跑同步（默认 0 = 不自动）
  */
 
 import http from 'node:http'
@@ -38,6 +43,7 @@ import {
   sequenceOf,
   validateSubmission,
 } from './store.mjs'
+import { githubConfig, runSync } from './github.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const PORT = Number(process.env.PORT ?? 8787)
@@ -157,6 +163,63 @@ function rateLimited(ip) {
     }
   }
   return false
+}
+
+/* ---------- issue 同步（可选，见 github.mjs） ---------- */
+
+const GITHUB = githubConfig(process.env)
+/** 提交 / 改状态后攒一小段再同步：一次批量跑胜过每条各打一次 GitHub */
+const SYNC_DEBOUNCE_MS = 3000
+let syncTimer = null
+let syncRunning = false
+let syncAgain = false
+
+/**
+ * 后台跑一轮同步：失败只记日志，绝不影响玩家已经拿到的响应。
+ * 已经在跑时记一个「再来一轮」，跑完自动补上——保证不丢最新改动。
+ */
+function scheduleSync(reason) {
+  if (!GITHUB || DRY_RUN) return
+  if (syncTimer) clearTimeout(syncTimer)
+  syncTimer = setTimeout(() => {
+    syncTimer = null
+    void pumpSync(reason)
+  }, SYNC_DEBOUNCE_MS)
+  syncTimer.unref?.()
+}
+
+async function pumpSync(reason) {
+  if (syncRunning) {
+    syncAgain = true
+    return
+  }
+  syncRunning = true
+  try {
+    const summary = await runSync({
+      config: GITHUB,
+      listRecords: async () => records,
+      saveRecord: async (record) => {
+        if (!records.some((item) => item.id === record.id)) records.push(record)
+        await saveRecords()
+      },
+      newId: async () => recordId(nextSequence()),
+      log: (message) => console.log(`反馈服务：${message}`),
+    })
+    console.log(
+      `反馈服务：issue 同步完成（${reason}）—— 建 ${summary.created}、导入 ${summary.imported}、` +
+        `推送 ${summary.pushed}、回读 ${summary.pulled}、无变化 ${summary.unchanged}` +
+        (summary.problems.length ? `、失败 ${summary.problems.length}` : ''),
+    )
+    for (const problem of summary.problems.slice(0, 5)) console.warn(`  · ${problem}`)
+  } catch (error) {
+    console.warn(`反馈服务：issue 同步失败（${reason}）—— ${error.message}`)
+  } finally {
+    syncRunning = false
+    if (syncAgain) {
+      syncAgain = false
+      void pumpSync(`${reason}（补跑）`)
+    }
+  }
 }
 
 /* ---------- HTTP ---------- */
@@ -306,7 +369,7 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
-  if (req.method !== 'POST' || !['/submit', '/status', '/import'].includes(url.pathname)) {
+  if (req.method !== 'POST' || !['/submit', '/status', '/link', '/import', '/sync'].includes(url.pathname)) {
     sendJson(res, 404, { ok: false, error: '没有这个接口' }, origin)
     return
   }
@@ -350,7 +413,68 @@ const server = http.createServer(async (req, res) => {
     record.status = input.status
     record.updatedAt = new Date().toISOString()
     if (!DRY_RUN) await saveRecords()
+    scheduleSync('改状态')
     sendJson(res, 200, { ok: true, record: publicRecord(record) }, origin)
+    return
+  }
+
+  /* ---- 维护者写回镜像 issue 的链接（GitHub Actions 同步用；见 scripts/sync-issues.mjs） ---- */
+  if (url.pathname === '/link') {
+    if (!adminOk(req)) {
+      sendJson(res, 403, { ok: false, error: ADMIN_KEY ? '管理密钥不正确' : '服务端未设置 ADMIN_KEY' }, origin)
+      return
+    }
+    const record = records.find((item) => item.id === String(input.id ?? ''))
+    if (!record) {
+      sendJson(res, 404, { ok: false, error: `没有编号为 ${input.id} 的记录` }, origin)
+      return
+    }
+    const issueUrl = String(input.issueUrl ?? '')
+    if (!/^https?:\/\/\S+\/issues\/\d+/.test(issueUrl)) {
+      sendJson(res, 400, { ok: false, error: 'issueUrl 非法：需要形如 https://github.com/<owner>/<repo>/issues/<编号> 的完整地址' }, origin)
+      return
+    }
+    record.issueUrl = issueUrl
+    record.issueNumber = Number(/\/issues\/(\d+)/.exec(issueUrl)?.[1]) || record.issueNumber
+    // 不动 updatedAt：补链接不是内容变化，动了会让下一轮对账的「谁更新」判断失真
+    if (!DRY_RUN) await saveRecords()
+    sendJson(res, 200, { ok: true, record: publicRecord(record) }, origin)
+    return
+  }
+
+  /* ---- 维护者主动跑一轮 issue 同步（建缺失的 / 导入新建的 / 对账） ---- */
+  if (url.pathname === '/sync') {
+    if (!adminOk(req)) {
+      sendJson(res, 403, { ok: false, error: ADMIN_KEY ? '管理密钥不正确' : '服务端未设置 ADMIN_KEY' }, origin)
+      return
+    }
+    if (!GITHUB) {
+      sendJson(res, 400, { ok: false, error: '服务端未配置 GITHUB_TOKEN，issue 同步未启用' }, origin)
+      return
+    }
+    if (DRY_RUN) {
+      sendJson(res, 200, { ok: true, dryRun: true, skipped: 'DRY_RUN' }, origin)
+      return
+    }
+    if (syncTimer) {
+      clearTimeout(syncTimer)
+      syncTimer = null
+    }
+    try {
+      const summary = await runSync({
+        config: GITHUB,
+        listRecords: async () => records,
+        saveRecord: async (record) => {
+          if (!records.some((item) => item.id === record.id)) records.push(record)
+          await saveRecords()
+        },
+        newId: async () => recordId(nextSequence()),
+        log: (message) => console.log(`反馈服务：${message}`),
+      })
+      sendJson(res, 200, { ok: true, ...summary }, origin)
+    } catch (error) {
+      sendJson(res, 502, { ok: false, error: `同步失败：${error.message}` }, origin)
+    }
     return
   }
 
@@ -429,6 +553,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   console.log(`收到反馈 ${record.id}：${record.title}`)
+  scheduleSync('提交')
   sendJson(res, 201, { ok: true, record: publicRecord(record) }, origin)
 })
 
@@ -452,6 +577,19 @@ function start() {
     console.log(`允许来源：${ALLOWED_ORIGINS.join(', ')}`)
     console.log(`单 IP 限流：${RATE_LIMIT} 条/小时${ADMIN_KEY ? '　已启用 ADMIN_KEY' : '　未设置 ADMIN_KEY（不能改状态）'}`)
     if (DRY_RUN) console.log('DRY_RUN=1：只校验并回显，不写盘')
+    if (GITHUB && !DRY_RUN) {
+      console.log(`issue 同步：已启用（${GITHUB.repo}）——提交与改状态后后台对账，POST /sync 可主动触发`)
+      // 启动后先补一轮：部署重启期间积压的记录、以及上次没推成功的，都在这里补上
+      setTimeout(() => void pumpSync('启动'), SYNC_DEBOUNCE_MS).unref?.()
+      const interval = Number(process.env.GITHUB_SYNC_MINUTES ?? 0)
+      if (interval > 0) {
+        const timer = setInterval(() => void pumpSync('定时'), interval * 60_000)
+        timer.unref?.()
+        console.log(`issue 同步：每 ${interval} 分钟自动跑一轮`)
+      }
+    } else if (!GITHUB) {
+      console.log('issue 同步：未启用（未配置 GITHUB_TOKEN；配置见 service/README.md）')
+    }
   })
 }
 

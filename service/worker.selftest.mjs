@@ -418,6 +418,48 @@ async function main() {
   })
   check(badStatusBody.status === 400, 'POST /status 状态取值非法 → 400', `实际 ${badStatusBody.status}`)
 
+  /* 9b. POST /sync（未配 GITHUB_TOKEN：只验证鉴权与开关） */
+  const syncNoKeyRes = await post(env, '/sync', {})
+  check(syncNoKeyRes.status === 403, 'POST /sync 无密钥 → 403', `实际 ${syncNoKeyRes.status}`)
+  const syncNoConfigRes = await post(env, '/sync', {}, { headers: { 'x-admin-key': ADMIN_KEY } })
+  const syncNoConfigBody = await syncNoConfigRes.json()
+  check(
+    syncNoConfigRes.status === 400 && /GITHUB_TOKEN/.test(syncNoConfigBody?.error ?? ''),
+    'POST /sync 未配置 GITHUB_TOKEN → 400 且说明原因',
+    `实际 ${syncNoConfigRes.status} ${show(syncNoConfigBody)}`,
+  )
+
+  /* 9c. POST /link（issue 链接写回） */
+  const ISSUE_URL = 'https://github.com/Paltrow-Studio/ShotaPartner-Docs/issues/31'
+  const linkNoKeyRes = await post(env, '/link', { id: record.id, issueUrl: ISSUE_URL })
+  check(linkNoKeyRes.status === 403, 'POST /link 无密钥 → 403', `实际 ${linkNoKeyRes.status}`)
+  const linkBadRes = await post(env, '/link', { id: record.id, issueUrl: 'javascript:alert(1)' }, {
+    headers: { 'x-admin-key': ADMIN_KEY },
+  })
+  check(linkBadRes.status === 400, 'POST /link 链接不合法 → 400', `实际 ${linkBadRes.status}`)
+  const linkMissingRes = await post(env, '/link', { id: 'F-9999', issueUrl: ISSUE_URL }, {
+    headers: { 'x-admin-key': ADMIN_KEY },
+  })
+  check(linkMissingRes.status === 404, 'POST /link 编号不存在 → 404', `实际 ${linkMissingRes.status}`)
+  const beforeLinkStatus = JSON.parse(await env.RECORDS.get(`record:${record.id}`))
+  const linkOkRes = await post(env, '/link', { id: record.id, issueUrl: ISSUE_URL }, {
+    headers: { 'x-admin-key': ADMIN_KEY },
+  })
+  const linkOkBody = await linkOkRes.json()
+  check(
+    linkOkRes.status === 200 && linkOkBody.record?.issueUrl === ISSUE_URL,
+    'POST /link 写回成功且公开响应带 issueUrl',
+    `实际 ${linkOkRes.status} ${show(linkOkBody)}`,
+  )
+  const afterLinkRecord = JSON.parse(await env.RECORDS.get(`record:${record.id}`))
+  check(
+    afterLinkRecord.issueUrl === ISSUE_URL &&
+      afterLinkRecord.updatedAt === beforeLinkStatus.updatedAt &&
+      afterLinkRecord.status === beforeLinkStatus.status,
+    '/link 已落盘且不改 updatedAt 与 status',
+    show({ updatedAt: [beforeLinkStatus.updatedAt, afterLinkRecord.updatedAt] }),
+  )
+
   /* 10. 限流：校验不消耗配额，超限 429 */
   const rateEnv = makeEnv({ RATE_LIMIT_PER_HOUR: '1' })
   const invalidFirst = await post(rateEnv, '/submit', submission({ title: '短' }))

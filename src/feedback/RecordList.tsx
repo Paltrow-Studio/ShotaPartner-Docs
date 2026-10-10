@@ -80,6 +80,11 @@ function RecordItem({ record }: { record: FeedbackRecord }) {
 
       <p className="num mt-3 flex flex-wrap items-center gap-x-3 text-[0.78rem] text-ink-faint">
         <span>{record.createdAt.slice(0, 10)}</span>
+        {record.issueUrl ? (
+          <a href={record.issueUrl} target="_blank" rel="noreferrer noopener" className="link-quiet">
+            在 issue 区查看
+          </a>
+        ) : null}
         {record.legacyUrl ? (
           <a href={record.legacyUrl} target="_blank" rel="noreferrer noopener" className="link-quiet">
             早期记录的原讨论

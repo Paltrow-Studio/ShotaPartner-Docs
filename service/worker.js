@@ -23,6 +23,10 @@
  *   ALLOWED_ORIGINS       逗号分隔；默认与 service/server.mjs 一致（站点域名 + 本地开发 / 预览端口）
  *   RATE_LIMIT_PER_HOUR   单 IP 每小时提交上限，默认 5；设为 0 表示关闭提交入口
  *   DRY_RUN=1             只校验并回显，一个字节都不写（连限流计数也不写）
+ *   GITHUB_TOKEN / GITHUB_REPO / PUBLIC_BASE_URL
+ *                         配置后开启 issue 双向同步（见 github.mjs）：
+ *                         提交与改状态后台补建 / 推送，POST /sync 主动跑一轮。
+ *                         不配则完全不碰 GitHub，行为与从前一致。
  */
 
 import {
@@ -35,6 +39,7 @@ import {
   sequenceOf,
   isStatus,
 } from './store.mjs'
+import { githubConfig, runSync } from './github.mjs'
 
 /**
  * 与 service/server.mjs 保持一致的默认来源列表：站点正式域名 + 本地开发 / 预览端口。
@@ -151,6 +156,51 @@ function secretEqual(given, expected) {
   const size = a.length > b.length ? a.length : b.length
   for (let i = 0; i < size; i += 1) diff |= (a[i] ?? 0) ^ (b[i] ?? 0)
   return diff === 0
+}
+
+/* ---------- issue 同步（可选，见 github.mjs） ---------- */
+
+/** 攒一小段再同步：一次批量跑胜过每条各打一次 GitHub。与 server.mjs 同值。 */
+const SYNC_DEBOUNCE_MS = 3000
+let syncTimer = null
+
+/** 跑一轮同步；返回摘要（未启用 / 演练模式返回 null）。失败抛给调用方。 */
+async function syncOnce(env, origin, reason) {
+  const config = githubConfig(env, origin)
+  if (!config || env.DRY_RUN === '1') return null
+  const summary = await runSync({
+    config,
+    listRecords: () => readRecords(env),
+    saveRecord: async (record) => {
+      await env.RECORDS.put(`${KEY_PREFIX}${record.id}`, JSON.stringify(record))
+    },
+    newId: async () => recordId(await nextSequence(env)),
+    log: (message) => console.log(`反馈服务：${message}`),
+  })
+  console.log(
+    `反馈服务：issue 同步完成（${reason}）—— 建 ${summary.created}、导入 ${summary.imported}、` +
+      `推送 ${summary.pushed}、回读 ${summary.pulled}、无变化 ${summary.unchanged}` +
+      (summary.problems.length ? `、失败 ${summary.problems.length}` : ''),
+  )
+  return summary
+}
+
+/**
+ * 提交 / 改状态后的后台同步：攒 3 秒，用 ctx.waitUntil 挂在本次请求的生命周期上。
+ * 没有 ctx（自测、裸调）时只发不收——同步失败不影响玩家已经拿到的响应。
+ */
+function scheduleSync(env, ctx, origin, reason) {
+  if (!githubConfig(env, origin) || env.DRY_RUN === '1') return
+  if (syncTimer) clearTimeout(syncTimer)
+  const run = new Promise((resolve) => {
+    syncTimer = setTimeout(resolve, SYNC_DEBOUNCE_MS)
+  })
+    .then(() => syncOnce(env, origin, reason))
+    .catch((error) => console.log(`反馈服务：issue 同步失败（${reason}）—— ${error.message}`))
+    .finally(() => {
+      syncTimer = null
+    })
+  if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(run)
 }
 
 /** 文件名只允许契约里的字符集：KV 键不是路径，但白名单能挡住奇怪的键与 URL 编码把戏。 */
@@ -334,7 +384,7 @@ async function handleMedia(env, pathname, headers) {
 }
 
 /** POST /submit */
-async function handleSubmit(request, env, headers) {
+async function handleSubmit(request, env, headers, ctx) {
   const dryRun = env.DRY_RUN === '1'
   // 演练模式对 KV 零写入（连限流计数也不写），所以没有绑定时也能演练；
   // 代价是演练环境不受限流保护——演练本来就不落盘，主要用途是联调与自测。
@@ -416,6 +466,8 @@ async function handleSubmit(request, env, headers) {
       record.images.push(`/media/${filename}`)
     }
     await env.RECORDS.put(`${KEY_PREFIX}${id}`, JSON.stringify(record))
+    // 后台补建 issue：响应不等 GitHub（玩家在国内，提交路径上多等一次跨境请求不划算）
+    scheduleSync(env, ctx, new URL(request.url).origin, '提交')
     return jsonResponse({ ok: true, record: publicRecord(record) }, 201, headers)
   }
 
@@ -482,7 +534,7 @@ async function handleImport(env, request, headers) {
 }
 
 /** POST /status（维护者） */
-async function handleStatus(request, env, headers) {
+async function handleStatus(request, env, headers, ctx) {
   // 未设置 ADMIN_KEY 一律拒绝（而不是「不设密码就放行」），并且用定长比较。
   // 两种失败给不同的说明：维护者看到「未设置」就知道该去补配置，而不是怀疑密钥抄错了。
   if (!secretEqual(request.headers.get('x-admin-key') ?? '', env.ADMIN_KEY ?? '')) {
@@ -525,11 +577,91 @@ async function handleStatus(request, env, headers) {
   // 演练模式回显改动、但不落盘（与 server.mjs 一致）：管理端能对着演练环境走通流程，
   // 而生产数据一个字节都没变。
   if (env.DRY_RUN !== '1') await env.RECORDS.put(key, JSON.stringify(record))
+  scheduleSync(env, ctx, new URL(request.url).origin, '改状态')
   return jsonResponse({ ok: true, record: publicRecord(record) }, 200, headers)
 }
 
+/**
+ * POST /link（维护者）：写回镜像 issue 的链接（GitHub Actions 同步用）。
+ * 与 server.mjs 同契约：链接不合法 → 400，编号不存在 → 404，
+ * 且**不改 updatedAt**——补链接不是内容变化，动了会让对账方向失真。
+ */
+async function handleLink(request, env, headers) {
+  if (!secretEqual(request.headers.get('x-admin-key') ?? '', env.ADMIN_KEY ?? '')) {
+    return jsonResponse(
+      { ok: false, error: env.ADMIN_KEY ? '管理密钥不正确' : '服务端未设置 ADMIN_KEY' },
+      403,
+      headers,
+    )
+  }
+  const missing = missingStore(env, headers)
+  if (missing) return missing
+
+  let body
+  try {
+    body = JSON.parse((await request.text()) || '{}')
+  } catch {
+    return jsonResponse({ ok: false, error: '请求体不是合法 JSON' }, 400, headers)
+  }
+
+  const sequence = sequenceOf(body?.id)
+  const key = sequence === null ? '' : `${KEY_PREFIX}${recordId(sequence)}`
+  const raw = key ? await env.RECORDS.get(key) : null
+  if (!raw) {
+    return jsonResponse({ ok: false, error: `没有编号为 ${body?.id ?? ''} 的记录` }, 404, headers)
+  }
+
+  const issueUrl = String(body?.issueUrl ?? '')
+  if (!/^https?:\/\/\S+\/issues\/\d+/.test(issueUrl)) {
+    return jsonResponse(
+      { ok: false, error: 'issueUrl 非法：需要形如 https://github.com/<owner>/<repo>/issues/<编号> 的完整地址' },
+      400,
+      headers,
+    )
+  }
+
+  let record
+  try {
+    record = JSON.parse(raw)
+  } catch {
+    return jsonResponse({ ok: false, error: '这条记录已损坏，请联系维护者' }, 500, headers)
+  }
+  record.issueUrl = issueUrl
+  record.issueNumber = Number(/\/issues\/(\d+)/.exec(issueUrl)?.[1]) || record.issueNumber
+  if (env.DRY_RUN !== '1') await env.RECORDS.put(key, JSON.stringify(record))
+  return jsonResponse({ ok: true, record: publicRecord(record) }, 200, headers)
+}
+
+/**
+ * POST /sync（维护者）：主动跑一轮 issue 同步。
+ * 与 Node 版同一契约：未配置 GITHUB_TOKEN → 400；GitHub 侧报错 → 502。
+ */
+async function handleSync(request, env, headers) {
+  if (!secretEqual(request.headers.get('x-admin-key') ?? '', env.ADMIN_KEY ?? '')) {
+    return jsonResponse(
+      { ok: false, error: env.ADMIN_KEY ? '管理密钥不正确' : '服务端未设置 ADMIN_KEY' },
+      403,
+      headers,
+    )
+  }
+  if (!githubConfig(env)) {
+    return jsonResponse({ ok: false, error: '服务端未配置 GITHUB_TOKEN，issue 同步未启用' }, 400, headers)
+  }
+  if (env.DRY_RUN === '1') return jsonResponse({ ok: true, dryRun: true, skipped: 'DRY_RUN' }, 200, headers)
+  if (syncTimer) {
+    clearTimeout(syncTimer)
+    syncTimer = null
+  }
+  try {
+    const summary = await syncOnce(env, new URL(request.url).origin, '手动')
+    return jsonResponse({ ok: true, ...summary }, 200, headers)
+  } catch (error) {
+    return jsonResponse({ ok: false, error: `同步失败：${error.message}` }, 502, headers)
+  }
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const allowed = allowedOrigins(env)
     const origin = request.headers.get('Origin') ?? ''
     const headers = corsHeaders(origin, allowed)
@@ -553,13 +685,19 @@ export default {
       return handleMedia(env, pathname, headers)
     }
     if (request.method === 'POST' && pathname === '/submit') {
-      return handleSubmit(request, env, headers)
+      return handleSubmit(request, env, headers, ctx)
     }
     if (request.method === 'POST' && pathname === '/import') {
       return handleImport(env, request, headers)
     }
     if (request.method === 'POST' && pathname === '/status') {
-      return handleStatus(request, env, headers)
+      return handleStatus(request, env, headers, ctx)
+    }
+    if (request.method === 'POST' && pathname === '/link') {
+      return handleLink(request, env, headers)
+    }
+    if (request.method === 'POST' && pathname === '/sync') {
+      return handleSync(request, env, headers)
     }
 
     // 方法不匹配也走这里：契约没有 405，统一 404 省得调用方去猜两套含义。

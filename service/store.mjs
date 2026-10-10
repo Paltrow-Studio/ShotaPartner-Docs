@@ -172,6 +172,8 @@ export function publicRecord(record) {
     updatedAt: record.updatedAt ?? record.createdAt,
     /** 历史记录指向早期 issue，新提交没有这个字段 */
     ...(record.legacyUrl ? { legacyUrl: record.legacyUrl } : {}),
+    /** 同步后指向镜像 issue（见 github.mjs）；未配置同步或还没建时没有这个字段 */
+    ...(record.issueUrl ? { issueUrl: record.issueUrl } : {}),
   }
 }
 
@@ -222,6 +224,9 @@ export function recordProblems(record) {
   need(typeof record?.content === 'string' && record.content.length > 0, 'content 为空')
   need(isStatus(record?.status), `status 非法：${JSON.stringify(record?.status)}`)
   need(Array.isArray(record?.images), 'images 不是数组')
+  if (record?.issueUrl !== undefined && record.issueUrl !== null) {
+    need(typeof record.issueUrl === 'string' && /^https?:\/\/\S+\/issues\/\d+/.test(record.issueUrl), `issueUrl 非法：${JSON.stringify(record.issueUrl)}`)
+  }
   need(
     typeof record?.createdAt === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(record.createdAt),
     `createdAt 非法：${JSON.stringify(record?.createdAt)}`,

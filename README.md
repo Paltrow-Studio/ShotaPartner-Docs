@@ -4,7 +4,7 @@
 
 - 🌐 线上地址：**https://paltrow-studio.github.io/ShotaPartner-Docs/**
 - 🐛 问题反馈：[反馈区（提交 / 进度 / 全部记录）](https://paltrow-studio.github.io/ShotaPartner-Docs/feedback.html) · 不需要 GitHub 账号
-- 🗂 历史反馈：早先的 23 条 issue 已导入反馈区（保留原讨论链接）；仓库里的 issue 区仅作维护者内部记录
+- 🗂 历史反馈：早先的 23 条 issue 已导入反馈区（保留原讨论链接）；配置反馈服务的 `GITHUB_TOKEN` 后，新反馈会与仓库 issue 区**双向同步**（见「与 issue 区的双向同步」）
 - 💬 提问与交流：[Discussions](https://github.com/Paltrow-Studio/ShotaPartner-Docs/discussions)
 
 ## 这个仓库是做什么的
@@ -12,7 +12,7 @@
 本仓库只有两个职责，不存放模组源码：
 
 1. **玩法说明页**：给玩家看的说明。重点是模组本身的玩法 —— 伙伴怎么抓、技能轮盘怎么用、加点与六项训练值、战斗 AI 与行为开关、工作任务、日常相处、墓碑与复活、学校维度、按键与物品、方块与状态效果速查。项目结构（三个 jar 的前置关系）只占首页一小块，够用就行。
-2. **公开反馈区**：三个模组仓库暂未公开，因此玩家的反馈统一提交到本仓库的 issue 区。页面上的反馈向导会帮你把**问题类型**与**涉及模块**预填进表单标题与标签，提交后直接分流。
+2. **公开反馈区**：三个模组仓库暂未公开，因此玩家的反馈统一提交到反馈区（`feedback.html`）。反馈服务可以把每条反馈同步成本仓库的 issue（双向：issue 侧改状态也会回读，见「与 issue 区的双向同步」）；仓库的 issue 区也保留了一个可选的 issue 表单入口，供本来就在 GitHub 上的人使用。
 
 页面是**类纸化**设计：米白纸面、宋体正文、虚线规矩线、朱砂印章式点缀，右上角可以切换 **日间 / 夜间**（默认跟随系统，选择记在 localStorage）。
 
@@ -29,7 +29,8 @@
 Vite + React 19 + TypeScript + Tailwind CSS v4，构建产物是纯静态站点，部署到 GitHub Pages。
 页面不请求任何外部 CDN 或字体服务；玩法说明页完全静态，纸面颗粒是一段内联的 SVG 噪点。
 反馈页（`feedback.html`）在配置了 `VITE_FEEDBACK_API` 时会向自建反馈服务读写数据，
-未配置时只读 `public/records.json` 这份静态副本。
+未配置时只读 `public/records.json` 这份静态副本。反馈服务再配置 `GITHUB_TOKEN` 时，
+会把记录与仓库 issue 区双向同步（可选，不配则完全不碰 GitHub）。
 
 ```bash
 npm ci            # 安装依赖（严格按 package-lock.json）
@@ -39,7 +40,8 @@ npm run preview   # 预览构建产物
 npm run typecheck # 只做类型检查
 
 npm run service      # 本地起反馈服务（http://127.0.0.1:8787）
-npm run service:test # 反馈服务自测（46 项，不需要网络）
+npm run service:test # 反馈服务自测（服务 + GitHub 同步层，不需要网络）
+npm run service:test:worker # Worker 自测（假 KV，无需 wrangler）
 ```
 
 联调反馈页：先 `npm run service`，再
@@ -96,10 +98,12 @@ src/
 
 service/                 # 反馈服务（Node 18+，零依赖；玩家提交的数据存这里）
 ├─ store.mjs              # 共享契约与校验（站点与服务端一致的唯一来源）
-├─ server.mjs             # 服务本体：磁盘存储 + 图片落盘 + 改状态
+├─ github.mjs             # issue 双向同步层（Node 与 Worker 共用；配 GITHUB_TOKEN 才启用）
+├─ server.mjs             # 服务本体：磁盘存储 + 图片落盘 + 改状态 + 同步接入
 ├─ worker.js              # 同契约的 Cloudflare Worker 版（数据放 KV）
-├─ admin.mjs              # 维护工具：list / show / status / export
-├─ selftest.mjs           # 服务自测（46 项，起真实进程走真实 HTTP）
+├─ admin.mjs              # 维护工具：list / show / status / sync / export
+├─ selftest.mjs           # 服务自测（起真实进程走真实 HTTP）
+├─ github.selftest.mjs    # 同步层自测（内存假 GitHub，不需要网络）
 ├─ worker.selftest.mjs    # Worker 自测（假 KV，无需 wrangler）
 ├─ CONTRACT.md            # HTTP 接口契约
 ├─ Dockerfile             # 容器镜像
@@ -110,6 +114,8 @@ scripts/
 ├─ check-content.mjs      # 内容门禁：扫描 src/ 与 dist/
 ├─ check-feedback-contract.mjs  # 比对站点与 service/store.mjs 的字段与上限
 ├─ import-legacy-issues.mjs     # 一次性补档：早期 issue → public/records.json
+├─ sync-issues.mjs        # Actions 同步入口（workflow 跑法一用；复用 service/github.mjs）
+├─ sync-issues.selftest.mjs # 上面脚本的自测（内存假服务 + 假 GitHub，不联网）
 └─ make-icons.py          # 站点图标 / 分享图
 
 public/
@@ -132,6 +138,7 @@ feedback.html             # 反馈区页面入口（与 index.html 同为 Vite �
 | 反馈服务的字段与校验 | `service/store.mjs`（与服务端共享；与站点的一致性由 `npm run check:feedback` 守着） |
 | 反馈服务部署与维护 | [service/README.md](service/README.md) |
 | 反馈记录（改状态、导出静态副本） | `service/admin.mjs`，见 service/README.md「维护」 |
+| 反馈 ↔ issue 区同步（开关、状态映射） | `service/github.mjs`；配置与运维见 service/README.md「与 issue 区的双向同步」 |
 | 记录静态副本 | `npm run service` 起来后 `node service/admin.mjs export --out public/records.json` |
 | 历史反馈补档 | `npm run seed:legacy`（只在补档时用，构建与部署都不访问 GitHub） |
 | 备用渠道 / 国内镜像 | `src/data/feedback.ts` 的 `FALLBACK_FEEDBACK_URL`、`site.ts` 的 `SITE_MIRROR_URL` |
@@ -254,8 +261,51 @@ GitHub 在国内经常无法直接访问，而 GitHub 的 Issue 表单还要求�
 | 配置 | 位置 | 作用 |
 | --- | --- | --- |
 | `VITE_FEEDBACK_API` | 构建期注入 / 仓库变量 `FEEDBACK_API` | 反馈服务地址；留空则反馈页只读 |
+| `GH_TOKEN` / `FEEDBACK_ADMIN_KEY` | Actions secrets（跑法一） | workflow 同步用的 PAT 与服务管理密钥；不建则不触发同步 |
+| `GITHUB_TOKEN` 等 | 反馈服务环境变量 / Worker secret（跑法二） | issue 双向同步开关与目标仓库；留空则完全不碰 GitHub |
 | `FALLBACK_FEEDBACK_URL` / `FALLBACK_FEEDBACK_LABEL` | `src/data/feedback.ts` | 国内备用提交渠道；留空则不显示 |
 | `SITE_MIRROR_URL` | `src/data/site.ts` | 本站国内镜像地址；留空则不显示 |
+
+### 与 issue 区的双向同步
+
+上面所有的「不依赖 GitHub」都是针对**玩家**的：提交与看进度只需要访问反馈服务。
+维护者如果想把 issue 区当工作台（用 GitHub 的通知、里程碑、搜索），可以配置同步，
+把记录镜像到本仓库的 issue 区：
+
+- **记录 → issue**：提交后补建 issue（标题 `[F-0031] …`，带「反馈 + 状态」标签），
+  改状态时推送开关与标签（`fixed`/`closed` 关 issue，`pending`/`investigating` 开 issue）。
+- **issue → 记录**：在 GitHub 上改状态会回读进记录；用 issue 表单（`.github/ISSUE_TEMPLATE/feedback.yml`）
+  开的新 issue 会被导入成新记录，玩家不用注册也能在反馈区看到它。
+- **方向裁决**：按 `updatedAt` 与 `updated_at` 时间戳取较新的一侧，两边一致时不动（幂等）。
+- **隐私**：issue 全文公开，同步的正文只用公开字段——**联系方式永不进 issue**。
+- 两种跑法**二选一，不能同时开**（两边同时跑会在「记录还没写回 issueUrl」的窗口里
+  各建一条 issue）：
+
+#### 跑法一：GitHub Actions 定时同步（推荐）
+
+同步逻辑跑在 workflow 里（[.github/workflows/sync-issues.yml](.github/workflows/sync-issues.yml) +
+[scripts/sync-issues.mjs](scripts/sync-issues.mjs)），**token 只存在仓库 secret 中，
+反馈服务端一个 token 都不用配**——国内服务器访问 `api.github.com` 不稳也不再是问题。
+对账规则与服务端直连用的是同一套代码（`service/github.mjs`）。
+
+有了 token 之后的操作（都在仓库 **Settings → Secrets and variables → Actions** 里做）：
+
+1. **Variables** 新建 `FEEDBACK_API` = 反馈服务地址（站点部署已在用这个变量，值相同）。
+2. **Secrets** 新建 `FEEDBACK_ADMIN_KEY` = 反馈服务的 `ADMIN_KEY`（同步要靠它写回状态与链接）。
+3. **Secrets** 新建 `GH_TOKEN` = 你的 PAT（fine-grained，只授本仓库 **Issues: Read and write**）。
+   —— 其实同仓库同步用内置 `GITHUB_TOKEN` 就够，这一步可省；用 PAT 的唯一区别是
+   issue 的作者显示为你本人而不是 `github-actions[bot]`。
+4. 推送 workflow 文件到 `main`，到 **Actions** 页手动跑一次 `Sync feedback to issues` 验证；
+   之后每 30 分钟自动跑，issue 侧有开 / 关 / 改标签 / 改正文的动作时也会立即触发一轮。
+5. 反馈服务端**不要**再配置 `GITHUB_TOKEN`（两种跑法互斥）。
+
+#### 跑法二：反馈服务直连
+
+服务端配 `GITHUB_TOKEN`，提交与改状态后在服务内后台对账，`POST /sync` 可主动触发。
+适合能稳定访问 GitHub 的部署（境外 VPS / Cloudflare Worker）。环境变量、
+`admin.mjs sync`、定时触发见 [service/README.md](service/README.md)「与 issue 区的双向同步」。
+未配置 token 时整条链路关闭，行为与从前一致；同步失败只进日志与 problems，
+**不影响玩家提交**。
 
 ## 反馈区与进度区
 
@@ -295,7 +345,8 @@ GIF 不压缩（转码会把动图压成静态图），超限时直接提示。
   维护者用 `node service/admin.mjs status F-0031 fixed` 改，进度区随即更新。
 - **联系方式不进公开响应**：只有带对 `X-Admin-Key` 的请求才能拿到，页面永远看不到它。
 - 早期的 23 条反馈（原 GitHub issue）已归一化成 `F-0008`~`F-0030`，保留原链接，
-  编号接着往下发。
+  编号接着往下发；这些历史记录不建镜像 issue。
+- 启用 issue 同步后，同步过的记录带 `issueUrl`，记录列表里显示「在 issue 区查看」入口。
 
 ## 许可
 

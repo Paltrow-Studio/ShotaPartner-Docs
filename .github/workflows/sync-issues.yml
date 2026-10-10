@@ -1,0 +1,59 @@
+# 伙伴物语 / Partner Monogatari —— 反馈区 ↔ issue 区双向同步
+#
+# 作用：把反馈服务里的记录镜像到本仓库 issue 区，并把 issue 侧的状态改动回读进记录。
+#       对账逻辑复用 service/github.mjs（与「反馈服务直连」方式是同一套代码，二选一）。
+# 触发：每 30 分钟定时 + issue 侧有动静（开 / 关 / 改标签 / 改正文）+ 手动。
+# 前置（Settings → Secrets and variables → Actions）：
+#   variables: FEEDBACK_API        反馈服务地址（站点部署在用的同一个变量）
+#   secrets:   FEEDBACK_ADMIN_KEY  反馈服务的 ADMIN_KEY（写回状态 / 链接 / 导入用）
+#   secrets:   GH_TOKEN            可选：仓库 fine-grained PAT（只授 Issues 读写）。
+#                                  不建则用内置 GITHUB_TOKEN，同样能跑；区别只是
+#                                  issue 的作者：PAT 记在你名下，内置记在
+#                                  github-actions[bot] 名下。
+#
+# 防回环说明：内置 GITHUB_TOKEN 触发的事件不会再触发 workflow（天然防回环）；
+# PAT 模式下我们自己改 issue 会多触发几轮空跑——都幂等、无写入，跑完即收敛，属正常。
+
+name: Sync feedback to issues
+
+on:
+  schedule:
+    - cron: '7,37 * * * *' # 每 30 分钟；错开整点，GitHub 定时任务在高峰期会排队
+  workflow_dispatch: # 手动跑一轮（部署后首跑、验证用）
+  issues:
+    # issue 侧有改动就立即回读；创建 / 关闭是最常用的手动处置动作
+    types: [opened, closed, reopened, labeled, unlabeled, edited]
+
+# 同一时间只跑一轮：定时与 issue 事件撞车时排队而不是并行，
+# 避免两轮同时读到「记录还没写回 issueUrl」而各建一条 issue。
+concurrency:
+  group: sync-issues
+  cancel-in-progress: false
+
+# 最小权限：读代码（检出）+ 写 issue（建 / 改开关与标签）
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  sync:
+    name: 记录 ↔ issue 对账
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 检出仓库代码
+        uses: actions/checkout@v7
+
+      - name: 安装 Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # 零依赖：脚本只 import 仓库内的 service/ 模块，不需要 npm ci
+      - name: 跑一轮同步
+        run: node scripts/sync-issues.mjs
+        env:
+          FEEDBACK_URL: ${{ vars.FEEDBACK_API }}
+          ADMIN_KEY: ${{ secrets.FEEDBACK_ADMIN_KEY }}
+          # 有 PAT 用 PAT；没有则退回内置 token（issues: write 已在上面授权）
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
